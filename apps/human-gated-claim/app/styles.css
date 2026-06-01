@@ -1,0 +1,198 @@
+:root {
+  color: #17201d;
+  background: #f6f7f4;
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  min-height: 44px;
+  border: 1px solid rgba(23, 32, 29, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17201d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 16px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+button.primary {
+  background: #10b981;
+  border-color: #10b981;
+  color: #06130e;
+}
+
+main {
+  min-height: 100vh;
+}
+
+.hero {
+  position: relative;
+  min-height: 62vh;
+  overflow: hidden;
+  display: grid;
+  align-items: end;
+  padding: 32px;
+}
+
+.heroImage {
+  object-fit: cover;
+}
+
+.heroShade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(246, 247, 244, 0.1), rgba(246, 247, 244, 0.9)),
+    linear-gradient(90deg, rgba(246, 247, 244, 0.96), rgba(246, 247, 244, 0.32));
+}
+
+.heroContent {
+  position: relative;
+  width: min(760px, 100%);
+  z-index: 1;
+}
+
+.eyebrow {
+  color: #0f766e;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(52px, 9vw, 112px);
+  letter-spacing: 0;
+  line-height: 0.88;
+  margin: 0;
+  max-width: 760px;
+}
+
+.subhead {
+  color: #33413d;
+  font-size: 20px;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.workspace {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 28px;
+}
+
+.statusPanel,
+.claimPanel {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(23, 32, 29, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgba(26, 42, 36, 0.08);
+}
+
+.statusPanel {
+  padding: 28px;
+}
+
+.stageRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.stage {
+  border: 1px solid rgba(23, 32, 29, 0.12);
+  border-radius: 999px;
+  color: #4b5b56;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.stage.active {
+  background: #d9f99d;
+  color: #18310b;
+}
+
+h2 {
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1;
+  letter-spacing: 0;
+  margin: 0 0 28px;
+}
+
+dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+dl div {
+  align-items: center;
+  border-top: 1px solid rgba(23, 32, 29, 0.12);
+  display: flex;
+  justify-content: space-between;
+  padding-top: 12px;
+}
+
+dt {
+  color: #64746f;
+}
+
+dd {
+  font-weight: 800;
+  margin: 0;
+}
+
+.claimPanel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.claimImage {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+@media (max-width: 820px) {
+  .hero {
+    min-height: 54vh;
+    padding: 22px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+

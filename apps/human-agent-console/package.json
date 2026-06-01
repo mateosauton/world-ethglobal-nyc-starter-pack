@@ -1,0 +1,31 @@
+{
+  "name": "@world-starter/human-agent-console",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "agent:demo": "tsx scripts/agent-demo.ts"
+  },
+  "dependencies": {
+    "@world-starter/world-patterns": "workspace:*",
+    "@worldcoin/agentkit": "^0.2.0",
+    "@worldcoin/human-in-the-loop-react": "^0.1.1",
+    "@worldcoin/idkit": "^4.1.8",
+    "ai": "^6.0.194",
+    "next": "^16.2.7",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "viem": "^2.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.3"
+  }
+}
+

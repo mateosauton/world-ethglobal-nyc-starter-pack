@@ -1,0 +1,23 @@
+{
+  "name": "world-ethglobal-nyc-starter-pack",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Starter pack for World-sponsored ETHGlobal NYC hackers.",
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev:claim": "pnpm --filter @world-starter/human-gated-claim dev",
+    "dev:agent": "pnpm --filter @world-starter/human-agent-console dev",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "contracts:test": "forge test -C contracts",
+    "contracts:build": "forge build -C contracts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
+
