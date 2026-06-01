@@ -7,6 +7,7 @@
     "dev": "next dev --port 3001",
     "start": "next start --port 3001",
     "build": "next build",
+    "postbuild": "node ../../scripts/restore-next-env.mjs",
     "typecheck": "tsc --noEmit",
     "agent:demo": "tsx scripts/agent-demo.ts"
   },

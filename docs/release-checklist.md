@@ -9,6 +9,7 @@ Run this before publishing the starter pack.
 - [ ] `pnpm typecheck` passes.
 - [ ] `pnpm contracts:test` passes.
 - [ ] `pnpm contracts:build` passes.
+- [ ] `pnpm test:ui` passes with apps running on ports 3000, 3001, and 3002.
 - [ ] No real secrets are committed.
 - [ ] `.env.example` has placeholders only.
 
@@ -43,3 +44,9 @@ Run this before publishing the starter pack.
 - [ ] Triage guide matches sponsor judging priorities.
 - [ ] Anti-gambling/chance-based Mini App note is present.
 
+## UI/UX Bench
+
+- [ ] `pnpm dev:bench` starts on port 3002.
+- [ ] Bench iframes show both starter apps.
+- [ ] Desktop and mobile frame toggles work.
+- [ ] `output/ui-ux/summary.json` reports no failures after `pnpm test:ui`.

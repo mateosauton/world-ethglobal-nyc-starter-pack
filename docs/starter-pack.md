@@ -13,6 +13,7 @@ This starter pack helps teams build launchable World-native products during ETHG
 3. Copy `.env.example` to `.env.local`.
 4. Run `pnpm test`, `pnpm typecheck`, and `pnpm contracts:test`.
 5. Pick the track path below.
+6. Run `pnpm dev:bench` to compare both starter apps during UI review.
 
 ## Track A: World ID Mini App
 
@@ -86,3 +87,12 @@ Use `docs/submission-template.md` before submitting. Judges should be able to se
 - AgentBook registration, if any.
 - Post-event plan.
 
+## UI/UX test bench
+
+Run the bench locally:
+
+```bash
+pnpm dev:all
+```
+
+Open `http://localhost:3002` to compare the Track A and Track B apps in desktop and mobile frames. Run `pnpm test:ui` to capture screenshots and check image loading, overflow, placeholder text, and the primary local flows.

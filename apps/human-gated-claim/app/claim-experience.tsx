@@ -103,6 +103,12 @@ export function ClaimExperience() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ localDevProof: true, action })
     });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      setNullifier(null);
+      setMessage(payload.error ?? "Local proof was rejected.");
+      return;
+    }
     const data = (await response.json()) as VerifyResponse;
     setNullifier(data.nullifier);
     setStep("verified");

@@ -1,23 +1,19 @@
 {
-  "name": "@world-starter/human-gated-claim",
+  "name": "@world-starter/ui-test-bench",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3000",
-    "start": "next start --port 3000",
+    "dev": "next dev --port 3002",
+    "start": "next start --port 3002",
     "build": "next build",
     "postbuild": "node ../../scripts/restore-next-env.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@world-starter/world-patterns": "workspace:*",
-    "@worldcoin/idkit": "^4.1.8",
-    "@worldcoin/minikit-js": "^2.0.3",
     "next": "^16.2.7",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "viem": "^2.52.0"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",

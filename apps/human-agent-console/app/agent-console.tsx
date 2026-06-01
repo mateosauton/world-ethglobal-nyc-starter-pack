@@ -102,7 +102,11 @@ export function AgentConsole() {
               Run registered agent
             </button>
           </div>
-          <pre>{JSON.stringify(agentResult, null, 2) || "No agent request yet."}</pre>
+          <pre>
+            {agentResult
+              ? JSON.stringify(agentResult, null, 2)
+              : "No agent request yet."}
+          </pre>
         </div>
 
         <div className="panel approvalPanel">
@@ -132,4 +136,3 @@ export function AgentConsole() {
     </main>
   );
 }
-

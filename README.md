@@ -6,6 +6,7 @@ Starter pack for World-sponsored ETHGlobal NYC hackers building with World ID 4.
 
 - `apps/human-gated-claim` — Track A Mini App showing wallet auth, IDKit proof verification, duplicate-nullifier protection, and MiniKit `sendTransaction`.
 - `apps/human-agent-console` — Track B console showing protected AgentKit-style resources and a Human-in-the-Loop approval path.
+- `apps/ui-test-bench` — Local UI/UX test bench for comparing the starter apps across desktop and mobile frames.
 - `packages/world-patterns` — Shared TypeScript helpers for env parsing, World ID verification, wallet auth, nullifier tracking, AgentKit decisions, and transaction encoding.
 - `contracts` — Foundry contract, tests, and deployment script for one-human-one-claim on World Chain.
 - `docs` — Docs-ready starter page, Track C upgrade recipes, submission template, workshop script, triage guide, and release checklist.
@@ -38,6 +39,24 @@ Run the AgentKit console:
 
 ```bash
 pnpm dev:agent
+```
+
+Run the UI/UX bench:
+
+```bash
+pnpm dev:bench
+```
+
+Run all three local apps:
+
+```bash
+pnpm dev:all
+```
+
+Run the automated UI/UX smoke bench after the apps are listening on ports 3000, 3001, and 3002:
+
+```bash
+pnpm test:ui
 ```
 
 ## Environment
@@ -87,4 +106,3 @@ Production proof validation must happen in a backend or smart contract. The loca
 - https://docs.world.org/agents/agent-kit/integrate
 - https://docs.world.org/agents/human-in-the-loop/integrate
 - https://docs.world.org/world-chain
-

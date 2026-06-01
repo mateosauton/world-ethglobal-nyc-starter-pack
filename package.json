@@ -8,7 +8,14 @@
     "build": "pnpm -r --if-present build",
     "dev:claim": "pnpm --filter @world-starter/human-gated-claim dev",
     "dev:agent": "pnpm --filter @world-starter/human-agent-console dev",
+    "dev:bench": "pnpm --filter @world-starter/ui-test-bench dev",
+    "dev:all": "pnpm --parallel --filter @world-starter/human-gated-claim --filter @world-starter/human-agent-console --filter @world-starter/ui-test-bench dev",
+    "start:claim": "pnpm --filter @world-starter/human-gated-claim start",
+    "start:agent": "pnpm --filter @world-starter/human-agent-console start",
+    "start:bench": "pnpm --filter @world-starter/ui-test-bench start",
+    "start:all": "pnpm --parallel --filter @world-starter/human-gated-claim --filter @world-starter/human-agent-console --filter @world-starter/ui-test-bench start",
     "test": "pnpm -r --if-present test",
+    "test:ui": "node scripts/ui-ux-smoke.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "contracts:test": "forge test -C contracts",
@@ -16,8 +23,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "playwright": "^1.57.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }
 }
-
