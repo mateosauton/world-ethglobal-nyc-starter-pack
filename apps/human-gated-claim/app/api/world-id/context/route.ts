@@ -15,6 +15,13 @@ export async function GET() {
     });
 
     return NextResponse.json({
+      diagnostics: {
+        action,
+        configured: true,
+        hasSigningKey: true,
+        mode: "signed",
+        rp_id: rpId
+      },
       rp_context: {
         rp_id: rpId,
         nonce: signature.nonce,
@@ -27,6 +34,15 @@ export async function GET() {
 
   const createdAt = Math.floor(Date.now() / 1000);
   return NextResponse.json({
+    diagnostics: {
+      action,
+      configured: false,
+      hasSigningKey: false,
+      mode: "missing-signing-key",
+      rp_id: rpId,
+      warning:
+        "WORLD_RP_SIGNING_KEY is missing, so live IDKit verification is disabled."
+    },
     rp_context: {
       rp_id: rpId,
       nonce: createWalletNonce(24),

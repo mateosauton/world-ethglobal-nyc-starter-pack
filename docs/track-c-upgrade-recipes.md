@@ -79,18 +79,18 @@ Expected failure modes:
 ## Recipe: Add AgentKit protected endpoint
 
 1. Register the agent wallet in AgentBook.
-2. Require signed agent request headers.
-3. Verify the signature.
-4. Resolve AgentBook registration.
-5. Apply usage limits per human-backed agent.
-6. Return a 402 challenge for missing or unregistered agents.
+2. Return a 402 response with an `extensions.agentkit` declaration when the request has no AgentKit header.
+3. Use `createAgentkitClient(...).fetch` on the agent side so it signs the challenge and retries.
+4. Use `createAgentkitHooks` on the resource server to validate the header and signature.
+5. Resolve AgentBook registration.
+6. Apply usage limits per human-backed agent.
 
 Expected failure modes:
 
 - Unsigned request.
 - Invalid signature.
 - Unregistered agent.
-- Payment fallback without AgentKit wrapping.
+- Agent signs for the wrong resource URL.
 
 ## Recipe: Add Human-in-the-Loop approval
 
@@ -105,4 +105,3 @@ Expected failure modes:
 - Approval action is too generic.
 - Approval is not bound to the agent action.
 - Workflow resumes before verification.
-

@@ -10,6 +10,7 @@ coverage
 .DS_Store
 *.tsbuildinfo
 .playwright-cli
+.playwright-mcp
 output
 
 # Foundry

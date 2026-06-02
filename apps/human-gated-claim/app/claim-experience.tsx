@@ -16,12 +16,45 @@ type RpContext = {
   signature: string;
 };
 
+type ContextDiagnostics = {
+  action: string;
+  configured: boolean;
+  hasSigningKey: boolean;
+  mode: "signed" | "missing-signing-key";
+  rp_id: string;
+  warning?: string;
+};
+
+type ContextResponse = {
+  diagnostics: ContextDiagnostics;
+  rp_context: RpContext;
+};
+
 type VerifyResponse = {
+  mode?: string;
   nullifier: string;
 };
 
 type WalletAuthResponse = {
   nonce: string;
+};
+
+type PreparedClaimPayload = {
+  chainId: number;
+  transactions: Array<{
+    data: `0x${string}`;
+    to: `0x${string}`;
+    value: "0x0";
+  }>;
+};
+
+type ApiLog = {
+  id: number;
+  label: string;
+  request?: unknown;
+  response?: unknown;
+  status?: number;
+  time: string;
 };
 
 const localAddress = "0x2222222222222222222222222222222222222222";
@@ -30,21 +63,49 @@ export function ClaimExperience() {
   const { isInstalled } = useMiniKit();
   const [open, setOpen] = useState(false);
   const [rpContext, setRpContext] = useState<RpContext | null>(null);
+  const [contextDiagnostics, setContextDiagnostics] =
+    useState<ContextDiagnostics | null>(null);
   const [step, setStep] = useState<StepState>("idle");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [nullifier, setNullifier] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready for one verified human.");
+  const [logs, setLogs] = useState<ApiLog[]>([]);
 
   const worldAppId = process.env.NEXT_PUBLIC_WORLD_APP_ID as `app_${string}`;
   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION ?? "one-human-one-claim";
   const isWorldApp = Boolean(isInstalled) || MiniKit.isInWorldApp();
+  const liveWorldIdReady = Boolean(
+    rpContext &&
+      contextDiagnostics?.configured &&
+      worldAppId &&
+      worldAppId.startsWith("app_")
+  );
 
   useEffect(() => {
-    fetch("/api/world-id/context")
-      .then((response) => response.json())
-      .then((data) => setRpContext(data.rp_context))
+    void requestJson<ContextResponse>("GET /api/world-id/context", "/api/world-id/context")
+      .then(({ ok, data }) => {
+        if (!ok) {
+          setMessage("World ID context is unavailable.");
+          return;
+        }
+        setRpContext(data.rp_context);
+        setContextDiagnostics(data.diagnostics);
+        if (!data.diagnostics.configured) {
+          setMessage("Live World ID needs Developer Portal signing config.");
+        }
+      })
       .catch(() => setMessage("World ID context is unavailable."));
   }, []);
+
+  useEffect(() => {
+    pushLog("MiniKit environment", {
+      response: {
+        isInstalled: Boolean(isInstalled),
+        isInWorldApp: MiniKit.isInWorldApp(),
+        worldAppIdConfigured: Boolean(worldAppId && worldAppId.startsWith("app_"))
+      }
+    });
+  }, [isInstalled, worldAppId]);
 
   const stages = useMemo(
     () => [
@@ -56,32 +117,62 @@ export function ClaimExperience() {
   );
 
   async function authenticateWallet() {
+    if (!isWorldApp) {
+      setMessage("MiniKit wallet auth is only available inside World App.");
+      pushLog("MiniKit.walletAuth skipped", {
+        response: {
+          reason: "not_in_world_app",
+          next: "Open this URL as a World Mini App or use the local wallet diagnostic."
+        }
+      });
+      return;
+    }
+
     setStep("wallet");
-    const nonceResponse = await fetch("/api/wallet-auth/nonce");
-    const { nonce } = (await nonceResponse.json()) as WalletAuthResponse;
+    const nonceResponse = await requestJson<WalletAuthResponse>(
+      "GET /api/wallet-auth/nonce",
+      "/api/wallet-auth/nonce"
+    );
+    if (!nonceResponse.ok) {
+      setMessage("Wallet nonce request failed.");
+      return;
+    }
 
     const result = await MiniKit.walletAuth({
-      nonce,
-      statement: "Authenticate for one-human-one-claim.",
-      fallback: () => ({
-        address: localAddress,
-        message: buildLocalSiweMessage(nonce),
-        signature: "0x0000000000000000000000000000000000000000000000000000000000000000"
-      })
+      nonce: nonceResponse.data.nonce,
+      statement: "Authenticate for one-human-one-claim."
     });
+    pushLog("MiniKit.walletAuth result", { response: result });
 
-    await fetch("/api/wallet-auth/verify", {
+    const verifyResponse = await requestJson("POST /api/wallet-auth/verify", "/api/wallet-auth/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(result.data)
     });
+    if (!verifyResponse.ok) {
+      setMessage("Wallet auth verification failed.");
+      return;
+    }
 
     setWalletAddress(result.data.address);
     setMessage("Wallet authenticated. Proof is next.");
   }
 
+  function useLocalWallet() {
+    setStep("wallet");
+    setWalletAddress(localAddress);
+    setMessage("Local wallet selected for browser diagnostics.");
+    pushLog("Local wallet diagnostic", {
+      response: {
+        address: localAddress,
+        mode: "local-only",
+        note: "This does not prove World App wallet auth."
+      }
+    });
+  }
+
   async function handleVerify(result: IDKitResult) {
-    const response = await fetch("/api/world-id/verify", {
+    const response = await requestJson<VerifyResponse>("POST /api/world-id/verify", "/api/world-id/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(result)
@@ -91,28 +182,25 @@ export function ClaimExperience() {
       throw new Error("Proof verification failed");
     }
 
-    const data = (await response.json()) as VerifyResponse;
-    setNullifier(data.nullifier);
+    setNullifier(response.data.nullifier);
     setStep("verified");
     setMessage("Human proof accepted. Claim can be prepared.");
   }
 
-  async function simulateWorldId() {
-    const response = await fetch("/api/world-id/verify", {
+  async function useLocalProof() {
+    const response = await requestJson<VerifyResponse>("POST /api/world-id/verify local", "/api/world-id/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ localDevProof: true, action })
     });
     if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
       setNullifier(null);
-      setMessage(payload.error ?? "Local proof was rejected.");
+      setMessage("Local proof was rejected.");
       return;
     }
-    const data = (await response.json()) as VerifyResponse;
-    setNullifier(data.nullifier);
+    setNullifier(response.data.nullifier);
     setStep("verified");
-    setMessage("Local proof accepted for browser development.");
+    setMessage("Local proof accepted for diagnostics only.");
   }
 
   async function sendClaim() {
@@ -121,37 +209,72 @@ export function ClaimExperience() {
       return;
     }
 
-    const response = await fetch("/api/claim/prepare", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        recipient: walletAddress ?? localAddress,
-        nullifierHash: nullifier
-      })
-    });
-    const payload = await response.json();
+    const response = await requestJson<PreparedClaimPayload>(
+      "POST /api/claim/prepare",
+      "/api/claim/prepare",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recipient: walletAddress ?? localAddress,
+          nullifierHash: nullifier
+        })
+      }
+    );
+    if (!response.ok) {
+      setMessage("Claim transaction preparation failed.");
+      return;
+    }
+    const payload = response.data;
     setStep("prepared");
 
     if (!isWorldApp) {
-      setStep("submitted");
-      setMessage("Claim submitted with browser fallback.");
+      setMessage("Prepared MiniKit transaction payload. Open in World App to execute.");
       return;
     }
 
     const result = await MiniKit.sendTransaction({
-      ...payload,
-      fallback: () => ({
-        userOpHash:
-          "0x1111111111111111111111111111111111111111111111111111111111111111",
-        status: "success" as const,
-        version: 2,
-        from: walletAddress ?? localAddress,
-        timestamp: new Date().toISOString()
-      })
+      ...payload
     });
+    pushLog("MiniKit.sendTransaction result", { response: result });
 
     setStep("submitted");
     setMessage(`Claim submitted with ${result.executedWith}.`);
+  }
+
+  async function requestJson<T>(
+    label: string,
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ): Promise<{ data: T; ok: boolean; status: number }> {
+    const requestBody = parseJsonBody(init?.body);
+    const response = await fetch(input, init);
+    const text = await response.text();
+    const data = text ? (JSON.parse(text) as T) : ({} as T);
+    pushLog(label, {
+      request: {
+        body: requestBody,
+        method: init?.method ?? "GET",
+        url: typeof input === "string" ? input : input.toString()
+      },
+      response: data,
+      status: response.status
+    });
+    return { data, ok: response.ok, status: response.status };
+  }
+
+  function pushLog(label: string, entry: Omit<ApiLog, "id" | "label" | "time">) {
+    setLogs((current) =>
+      [
+        {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          label,
+          time: new Date().toISOString(),
+          ...entry
+        },
+        ...current
+      ].slice(0, 12)
+    );
   }
 
   return (
@@ -188,7 +311,11 @@ export function ClaimExperience() {
           <dl>
             <div>
               <dt>MiniKit</dt>
-              <dd>{isWorldApp ? "World App" : "Browser fallback"}</dd>
+              <dd>{isWorldApp ? "World App" : "Not in World App"}</dd>
+            </div>
+            <div>
+              <dt>IDKit</dt>
+              <dd>{liveWorldIdReady ? "Signed context" : "Needs portal config"}</dd>
             </div>
             <div>
               <dt>Wallet</dt>
@@ -211,19 +338,28 @@ export function ClaimExperience() {
           />
           <div className="actions">
             <button onClick={authenticateWallet}>Wallet auth</button>
+            <button onClick={useLocalWallet}>Use local wallet</button>
             <button
               onClick={() => setOpen(true)}
-              disabled={!rpContext}
+              disabled={!liveWorldIdReady}
               className="primary"
             >
               Verify with World ID
             </button>
-            <button onClick={simulateWorldId}>Simulate proof</button>
+            <button onClick={useLocalProof}>Use local proof</button>
             <button onClick={sendClaim} disabled={!nullifier}>
-              Send claim tx
+              {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="consolePanel" aria-label="Server console">
+        <div>
+          <p className="eyebrow">Server console</p>
+          <h2>Logs and responses</h2>
+        </div>
+        <pre>{logs.length ? JSON.stringify(logs, null, 2) : "No requests yet."}</pre>
       </section>
 
       {rpContext ? (
@@ -249,15 +385,13 @@ function shortAddress(value: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
-function buildLocalSiweMessage(nonce: string) {
-  return [
-    "localhost wants you to sign in with your Ethereum account:",
-    localAddress,
-    "",
-    "URI: http://localhost:3000",
-    "Version: 1",
-    "Chain ID: 4801",
-    `Nonce: ${nonce}`,
-    `Issued At: ${new Date().toISOString()}`
-  ].join("\n");
+function parseJsonBody(body: BodyInit | null | undefined) {
+  if (typeof body !== "string") {
+    return undefined;
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    return body;
+  }
 }

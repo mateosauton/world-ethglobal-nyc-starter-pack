@@ -92,20 +92,24 @@ async function runClaimFlow(browser) {
   const page = await browser.newPage({ viewport: viewports[1] });
   try {
     await page.goto(targets[0].url, { waitUntil: "networkidle", timeout: 15_000 });
-    await page.getByRole("button", { name: "Simulate proof" }).click();
-    await expectVisibleText(page, "Local proof accepted for browser development.", "claim proof");
-    const submitButton = page.getByRole("button", { name: "Send claim tx" });
+    await page.getByRole("button", { name: "Use local proof" }).click();
+    await expectVisibleText(page, "Local proof accepted for diagnostics only.", "claim proof");
+    const submitButton = page.getByRole("button", { name: "Prepare claim tx" });
     await submitButton.waitFor({ state: "visible", timeout: 5_000 });
     await page.waitForFunction(
       (buttonText) =>
         Array.from(document.querySelectorAll("button")).some(
           (button) => button.textContent?.trim() === buttonText && !button.disabled
         ),
-      "Send claim tx",
+      "Prepare claim tx",
       { timeout: 5_000 }
     );
     await submitButton.click();
-    await expectVisibleText(page, "Claim submitted with browser fallback.", "claim flow");
+    await expectVisibleText(
+      page,
+      "Prepared MiniKit transaction payload. Open in World App to execute.",
+      "claim flow"
+    );
     await page.screenshot({
       path: path.join(outputDir, "claim-flow-mobile.png"),
       fullPage: true
@@ -119,11 +123,13 @@ async function runClaimFlow(browser) {
 }
 
 async function runAgentFlow(browser) {
-  const page = await browser.newPage({ viewport: viewports[1] });
+    const page = await browser.newPage({ viewport: viewports[1] });
   try {
     await page.goto(targets[1].url, { waitUntil: "networkidle", timeout: 15_000 });
-    await page.getByRole("button", { name: "Challenge missing agent" }).click();
-    await expectVisibleText(page, "human_backed_agent_required", "agent challenge");
+    await page.getByRole("button", { name: "Fetch without AgentKit" }).click();
+    await expectVisibleText(page, "agentkit_required", "agent challenge");
+    await page.getByRole("button", { name: "Run signed registered" }).click();
+    await expectVisibleText(page, "AgentKit signed the retry and the resource granted access.", "agent allowed");
     await page.getByRole("button", { name: "Request approval" }).click();
     await page.getByRole("button", { name: "Approve locally" }).click();
     await expectVisibleText(page, "approved", "hitl approval");

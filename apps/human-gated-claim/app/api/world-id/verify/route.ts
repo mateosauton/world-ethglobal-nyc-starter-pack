@@ -19,13 +19,16 @@ export async function POST(request: NextRequest) {
     if (!nullifiers.tryRecord(nullifier, action)) {
       return NextResponse.json({ error: "duplicate nullifier" }, { status: 409 });
     }
-    return NextResponse.json({ success: true, nullifier });
+    return NextResponse.json({ success: true, nullifier, mode: "local-dev-proof" });
   }
 
   const rpId = process.env.WORLD_RP_ID;
   if (!rpId) {
     return NextResponse.json(
-      { error: "WORLD_RP_ID is required for live proof verification" },
+      {
+        error: "WORLD_RP_ID is required for live proof verification",
+        mode: "live-world-id"
+      },
       { status: 500 }
     );
   }
@@ -37,10 +40,13 @@ export async function POST(request: NextRequest) {
   });
 
   if (!nullifiers.tryRecord(result.nullifier, action)) {
-    return NextResponse.json({ error: "duplicate nullifier" }, { status: 409 });
+    return NextResponse.json(
+      { error: "duplicate nullifier", mode: "live-world-id" },
+      { status: 409 }
+    );
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, mode: "live-world-id" });
 }
 
 function isLocalRequest(request: NextRequest) {

@@ -26,7 +26,7 @@ What it demonstrates:
 - IDKit World ID 4.0 proof request and backend verification.
 - Duplicate nullifier rejection.
 - MiniKit `sendTransaction` payload generation for World Chain.
-- Browser fallback for local demos.
+- A request console that separates live World App paths from local diagnostics.
 
 Good project patterns:
 
@@ -40,11 +40,11 @@ Use `apps/human-agent-console` when agents should be allowed to act only if back
 
 What it demonstrates:
 
-- Protected resource endpoint.
-- Signed agent headers.
-- AgentBook-style registration check.
-- 402 challenge response for missing or unregistered agents.
-- Local agent client demo.
+- Protected resource endpoint that returns an AgentKit 402 extension.
+- SDK client flow with `createAgentkitClient` signing and retrying.
+- Server verification with `createAgentkitHooks`.
+- AgentBook live or local-allowlist verification modes.
+- Local agent client demo with visible client and server events.
 - Human-in-the-Loop approval request and approval completion.
 
 Good project patterns:
@@ -96,3 +96,11 @@ pnpm dev:all
 ```
 
 Open `http://localhost:3002` to compare the Track A and Track B apps in desktop and mobile frames. Run `pnpm test:ui` to capture screenshots and check image loading, overflow, placeholder text, and the primary local flows.
+
+## Integration truth table
+
+- `Verify with World ID` is live only when the Developer Portal app ID, RP ID, and RP signing key are configured.
+- `Use local proof` is a diagnostics path and does not represent a real World ID proof.
+- `Wallet auth` and `Send claim tx` execute through MiniKit only inside World App.
+- `Prepare claim tx` in a browser only shows the payload that World App will execute.
+- AgentKit demo requests use the real AgentKit SDK challenge/sign/retry flow. The default AgentBook lookup is local for repeatable tests; `AGENTBOOK_VERIFIER=live` switches to live AgentBook.

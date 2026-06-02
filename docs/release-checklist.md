@@ -16,10 +16,12 @@ Run this before publishing the starter pack.
 ## Track A
 
 - [ ] `pnpm dev:claim` starts.
-- [ ] Browser fallback proof works.
+- [ ] Live World ID verify is tested with a signed RP context.
+- [ ] Local proof is visibly labeled as diagnostics.
 - [ ] Wallet auth nonce endpoint works.
 - [ ] World ID verify endpoint rejects duplicates.
-- [ ] Claim transaction payload uses the deployed contract address.
+- [ ] Browser claim path prepares payload without claiming execution.
+- [ ] World App claim path executes MiniKit `sendTransaction`.
 
 ## Contracts
 
@@ -31,8 +33,9 @@ Run this before publishing the starter pack.
 ## Track B
 
 - [ ] `pnpm dev:agent` starts.
-- [ ] Missing agent receives a 402 challenge.
-- [ ] Registered demo agent succeeds.
+- [ ] Missing agent receives a 402 AgentKit extension challenge.
+- [ ] Signed unregistered agent is rejected.
+- [ ] Registered demo agent succeeds through `createAgentkitClient` and `createAgentkitHooks`.
 - [ ] Human approval request and approval completion work.
 - [ ] AgentBook registration instructions are visible.
 

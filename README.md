@@ -4,8 +4,8 @@ Starter pack for World-sponsored ETHGlobal NYC hackers building with World ID 4.
 
 ## What is inside
 
-- `apps/human-gated-claim` — Track A Mini App showing wallet auth, IDKit proof verification, duplicate-nullifier protection, and MiniKit `sendTransaction`.
-- `apps/human-agent-console` — Track B console showing protected AgentKit-style resources and a Human-in-the-Loop approval path.
+- `apps/human-gated-claim` — Track A Mini App showing World App wallet auth, IDKit proof verification, duplicate-nullifier protection, MiniKit transaction preparation/execution, and an in-app request console.
+- `apps/human-agent-console` — Track B console showing a real AgentKit SDK challenge/sign/retry flow, AgentBook verification mode, and a Human-in-the-Loop approval path.
 - `apps/ui-test-bench` — Local UI/UX test bench for comparing the starter apps across desktop and mobile frames.
 - `packages/world-patterns` — Shared TypeScript helpers for env parsing, World ID verification, wallet auth, nullifier tracking, AgentKit decisions, and transaction encoding.
 - `contracts` — Foundry contract, tests, and deployment script for one-human-one-claim on World Chain.
@@ -86,17 +86,21 @@ Required for the AgentKit demo:
 
 ```bash
 AGENTKIT_RESOURCE_URL=http://localhost:3001/api/protected-resource
-AGENTBOOK_REGISTERED_AGENTS=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+AGENTKIT_NETWORK=eip155:4801
+AGENTKIT_MODE=free
+AGENTBOOK_VERIFIER=local-allowlist
+AGENTBOOK_REGISTERED_AGENTS=0xd19a272317222597d9f9CeA28dEF53327c30A059
 ```
 
 ## World App vs browser mode
 
-The examples are built to run in two modes:
+The examples are explicit about which paths are live and which paths are local diagnostics:
 
-- World App mode uses MiniKit and IDKit directly.
-- Browser mode uses local fallback buttons and mock paths so hackers can demo flows before portal credentials, app review, or device testing are ready.
+- Live IDKit requires `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, and `WORLD_RP_SIGNING_KEY`. Without a signing key, the app disables live verification and shows the server response in the console.
+- MiniKit wallet auth and transaction execution are World App paths. Browser mode can prepare payloads and run local diagnostics, but it does not claim that a MiniKit command executed.
+- AgentKit uses `createAgentkitClient` and `createAgentkitHooks`. The default AgentBook verifier is a local allowlist for repeatable testing; set `AGENTBOOK_VERIFIER=live` to use the live AgentBook lookup.
 
-Production proof validation must happen in a backend or smart contract. The local mock proof path is only for development.
+Production proof validation must happen in a backend or smart contract. The local proof path is only for diagnostics and is labeled as such in the UI.
 
 ## Useful docs
 

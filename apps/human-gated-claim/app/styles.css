@@ -184,6 +184,31 @@ dd {
   gap: 10px;
 }
 
+.consolePanel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(23, 32, 29, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 18px 60px rgba(26, 42, 36, 0.08);
+  display: grid;
+  gap: 18px;
+  margin: 0 auto 32px;
+  max-width: 1180px;
+  padding: 28px;
+}
+
+pre {
+  background: #101816;
+  border-radius: 8px;
+  color: #d9f99d;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  min-height: 260px;
+  overflow: auto;
+  padding: 18px;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 820px) {
   .hero {
     min-height: 54vh;
@@ -195,4 +220,3 @@ dd {
     padding: 18px;
   }
 }
-
