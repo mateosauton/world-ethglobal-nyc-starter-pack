@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import path from "node:path";
 import { chromium } from "playwright";
 
@@ -78,6 +79,7 @@ for (const target of targets) {
 }
 
 await runClaimFlow(browser);
+await runClaimDuplicateCheck();
 await runAgentFlow(browser);
 await runHitlFlow(browser);
 
@@ -126,6 +128,41 @@ async function runClaimFlow(browser) {
     fail("claim flow", error.message);
   } finally {
     await page.close();
+  }
+}
+
+async function runClaimDuplicateCheck() {
+  const nullifier = `0x${randomBytes(32).toString("hex")}`;
+  const body = {
+    action: "one-human-one-claim",
+    localDevProof: true,
+    nullifier_hash: nullifier
+  };
+
+  try {
+    const first = await fetch(`${targets[0].url}/api/world-id/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!first.ok) {
+      fail("claim duplicate setup", `${first.status}: ${await first.text()}`);
+      return;
+    }
+
+    const second = await fetch(`${targets[0].url}/api/world-id/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (second.status !== 409) {
+      fail("claim duplicate nullifier", `${second.status}: ${await second.text()}`);
+      return;
+    }
+
+    results.push({ target: "claim-duplicate-nullifier", viewport: "api", ok: true });
+  } catch (error) {
+    fail("claim duplicate nullifier", error.message);
   }
 }
 

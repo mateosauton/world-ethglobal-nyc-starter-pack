@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
     body.localDevProof === true &&
     (process.env.NODE_ENV !== "production" || isLocalRequest(request))
   ) {
-    const nullifier = `0x${randomBytes(32).toString("hex")}`;
+    const nullifier =
+      localDiagnosticNullifier(body) ?? `0x${randomBytes(32).toString("hex")}`;
     if (!nullifiers.tryRecord(nullifier, action)) {
       return NextResponse.json({ error: "duplicate nullifier" }, { status: 409 });
     }
@@ -47,6 +48,18 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ...result, mode: "live-world-id" });
+}
+
+function localDiagnosticNullifier(body: {
+  nullifierHash?: unknown;
+  nullifier_hash?: unknown;
+}) {
+  const value = body.nullifierHash ?? body.nullifier_hash;
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return /^0x[0-9a-fA-F]{64}$/.test(value) ? value : null;
 }
 
 function isLocalRequest(request: NextRequest) {

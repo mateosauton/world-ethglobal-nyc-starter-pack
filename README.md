@@ -97,8 +97,10 @@ AGENTKIT_RESOURCE_URL=http://localhost:3001/api/protected-resource
 AGENTKIT_NETWORK=eip155:4801
 AGENTKIT_MODE=free
 AGENTBOOK_VERIFIER=local-allowlist
-AGENTBOOK_REGISTERED_AGENTS=0xd19a272317222597d9f9CeA28dEF53327c30A059
+AGENTBOOK_REGISTERED_AGENTS=0x...
 ```
+
+The AgentKit console includes a built-in registered demo agent for local testing when `AGENTBOOK_REGISTERED_AGENTS` is unset or left as the placeholder.
 
 ## World App vs browser mode
 

@@ -136,8 +136,13 @@ function createVerifier(
     });
   }
 
+  const configuredAllowlist = process.env.AGENTBOOK_REGISTERED_AGENTS?.trim();
+  const allowlistInput =
+    configuredAllowlist && !configuredAllowlist.includes("replace")
+      ? configuredAllowlist
+      : demoRegisteredAgent;
   const allowlist = new Set(
-    (process.env.AGENTBOOK_REGISTERED_AGENTS ?? demoRegisteredAgent)
+    allowlistInput
       .split(",")
       .map((entry) => entry.trim().toLowerCase())
       .filter(Boolean)

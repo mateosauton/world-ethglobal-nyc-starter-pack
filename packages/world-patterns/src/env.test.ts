@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parseWorldEnv } from "./env";
 
 describe("parseWorldEnv", () => {
+  const testAppId = "app_test_00000000000000000000000000000000";
+
   it("parses World app, RP, and chain settings from process-style env", () => {
     const env = parseWorldEnv({
-      NEXT_PUBLIC_WORLD_APP_ID: "app_c1c1e3cf2cf434412f9792de9e4592cb",
+      NEXT_PUBLIC_WORLD_APP_ID: testAppId,
       WORLD_RP_ID: "rp_test_123",
       WORLD_RP_SIGNING_KEY: "0xabc123",
       WORLD_ID_ACTION: "one-human-one-claim",
@@ -15,7 +17,7 @@ describe("parseWorldEnv", () => {
       WORLD_CHAIN_RPC_URL: "https://worldchain-sepolia.g.alchemy.com/public"
     });
 
-    expect(env.worldAppId).toBe("app_c1c1e3cf2cf434412f9792de9e4592cb");
+    expect(env.worldAppId).toBe(testAppId);
     expect(env.worldIdAction).toBe("one-human-one-claim");
     expect(env.worldIdEnvironment).toBe("staging");
     expect(env.worldChainId).toBe(4801);
@@ -27,7 +29,7 @@ describe("parseWorldEnv", () => {
   it("rejects production-looking configs that are missing RP credentials", () => {
     expect(() =>
       parseWorldEnv({
-        NEXT_PUBLIC_WORLD_APP_ID: "app_c1c1e3cf2cf434412f9792de9e4592cb",
+        NEXT_PUBLIC_WORLD_APP_ID: testAppId,
         WORLD_ID_ACTION: "one-human-one-claim",
         WORLD_ID_ENVIRONMENT: "production",
         NEXT_PUBLIC_WORLD_CHAIN_ID: "480",
@@ -38,4 +40,3 @@ describe("parseWorldEnv", () => {
     ).toThrow(/WORLD_RP_ID/);
   });
 });
-
