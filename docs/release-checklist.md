@@ -6,6 +6,8 @@ Last audit: 2026-06-04.
 
 Release status: not publish-ready until the unchecked external World App, World Chain, and Developer Portal gates are completed.
 
+Continuation audit: local apps and World Chain Sepolia RPC are reachable, but no usable portal/deployer credentials are available in this runtime. The configured Developer Portal MCP key has a `0x` prefix; the official Developer Portal MCP docs state portal API keys start with `api_`, and a direct MCP `listTools` attempt returned `MCP error -32001: API key is required.`
+
 ## Repo
 
 - [x] `pnpm install` succeeds from a clean clone.
@@ -30,7 +32,7 @@ Release status: not publish-ready until the unchecked external World App, World 
 - [x] `pnpm dev:claim` starts.
   Evidence: `http://localhost:3000` returned 200 from the detached `world-claim` screen session.
 - [ ] Live World ID verify is tested with a signed RP context.
-  Blocked: current local context returned `configured:false` because `WORLD_RP_SIGNING_KEY` is not configured in local runtime. Requires a real World app, RP ID, signing key, and a live IDKit proof.
+  Blocked: current local context returned `configured:false`, `mode:missing-signing-key`, `rp_id:rp_local_dev`, and `hasSigningKey:false`. Requires a real World app, RP ID, signing key, and a live IDKit proof.
 - [x] Local proof is visibly labeled as diagnostics.
   Evidence: `pnpm test:ui` verified the claim flow text `Local proof accepted for diagnostics only.`
 - [x] Wallet auth nonce endpoint works.
@@ -40,16 +42,16 @@ Release status: not publish-ready until the unchecked external World App, World 
 - [x] Browser claim path prepares payload without claiming execution.
   Evidence: `pnpm test:ui` verified `Prepared MiniKit transaction payload. Open in World App to execute.`
 - [ ] World App claim path executes MiniKit `sendTransaction`.
-  Blocked: requires opening the Mini App inside World App with a live wallet and allowlisted contract. Browser evidence only proves payload preparation.
+  Blocked: requires opening the Mini App inside World App with a live wallet and allowlisted contract. Browser evidence only proves payload preparation. World docs confirm MiniKit commands must be tested inside World App and contract interactions must be allowlisted in Developer Portal.
 
 ## Contracts
 
 - [ ] World Chain Sepolia deployment works.
-  Blocked: `.env.local` is missing, so no deployer key or target deployment config is available. `forge build` and tests pass locally.
+  Blocked: `.env.local` is missing, so no deployer key or target deployment config is available. `forge build` and tests pass locally, and `cast chain-id --rpc-url https://worldchain-sepolia.g.alchemy.com/public` returned `4801`.
 - [ ] Contract address is added to `.env.local`.
   Blocked: `.env.local` is missing.
 - [ ] Contract function is allowlisted in the World Developer Portal.
-  Blocked: no deployed contract address was available to allowlist.
+  Blocked: no deployed contract address was available to allowlist. Developer Portal MCP is configured but the available key is not a usable `api_` portal key, so portal permissions could not be inspected or changed from this session.
 - [ ] Explorer link is captured for submissions.
   Blocked: no World Chain Sepolia deployment was performed in this audit.
 
