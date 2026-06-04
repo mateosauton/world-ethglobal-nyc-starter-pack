@@ -17,6 +17,12 @@ const targets = [
     h1: "Human Agent Console"
   },
   {
+    name: "hitl",
+    url: process.env.HITL_URL ?? "http://localhost:3003",
+    title: "Verified Action Desk",
+    h1: "Verified Action Desk"
+  },
+  {
     name: "bench",
     url: process.env.BENCH_URL ?? "http://localhost:3002",
     title: "World Starter UI Bench",
@@ -73,6 +79,7 @@ for (const target of targets) {
 
 await runClaimFlow(browser);
 await runAgentFlow(browser);
+await runHitlFlow(browser);
 
 await browser.close();
 
@@ -123,7 +130,7 @@ async function runClaimFlow(browser) {
 }
 
 async function runAgentFlow(browser) {
-    const page = await browser.newPage({ viewport: viewports[1] });
+  const page = await browser.newPage({ viewport: viewports[1] });
   try {
     await page.goto(targets[1].url, { waitUntil: "networkidle", timeout: 15_000 });
     await page.getByRole("button", { name: "Fetch without AgentKit" }).click();
@@ -140,6 +147,33 @@ async function runAgentFlow(browser) {
     results.push({ target: "agent-flow", viewport: "mobile", ok: true });
   } catch (error) {
     fail("agent flow", error.message);
+  } finally {
+    await page.close();
+  }
+}
+
+async function runHitlFlow(browser) {
+  const target = targets.find((candidate) => candidate.name === "hitl");
+  const page = await browser.newPage({ viewport: viewports[1] });
+  try {
+    await page.goto(target.url, { waitUntil: "networkidle", timeout: 15_000 });
+    await page.getByRole("button", { name: "Request human approval" }).click();
+    await expectVisibleText(page, "hitl:grant-482:high:2500", "hitl action");
+    await page.getByRole("button", { name: "Use local diagnostic approval" }).click();
+    await expectVisibleText(page, "Local diagnostic approval recorded.", "hitl approval");
+    await page.getByRole("button", { name: "Resume action" }).click();
+    await expectVisibleText(
+      page,
+      "Agent action resumed after human approval.",
+      "hitl resume"
+    );
+    await page.screenshot({
+      path: path.join(outputDir, "hitl-flow-mobile.png"),
+      fullPage: true
+    });
+    results.push({ target: "hitl-flow", viewport: "mobile", ok: true });
+  } catch (error) {
+    fail("hitl flow", error.message);
   } finally {
     await page.close();
   }

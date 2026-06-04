@@ -16,6 +16,13 @@ const apps = [
     port: 3001,
     path: "Track B",
     summary: "Agent challenge, protected resource, and Human-in-the-Loop approval."
+  },
+  {
+    id: "hitl",
+    title: "Verified Action Desk",
+    port: 3003,
+    path: "HITL",
+    summary: "Official Human-in-the-Loop message context, World ID approval, and resume gate."
   }
 ] as const;
 
@@ -130,4 +137,3 @@ export function Bench() {
     </main>
   );
 }
-

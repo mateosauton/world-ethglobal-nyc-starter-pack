@@ -9,7 +9,7 @@ Run this before publishing the starter pack.
 - [ ] `pnpm typecheck` passes.
 - [ ] `pnpm contracts:test` passes.
 - [ ] `pnpm contracts:build` passes.
-- [ ] `pnpm test:ui` passes with apps running on ports 3000, 3001, and 3002.
+- [ ] `pnpm test:ui` passes with apps running on ports 3000, 3001, 3002, and 3003.
 - [ ] No real secrets are committed.
 - [ ] `.env.example` has placeholders only.
 
@@ -39,6 +39,14 @@ Run this before publishing the starter pack.
 - [ ] Human approval request and approval completion work.
 - [ ] AgentBook registration instructions are visible.
 
+## Human-in-the-Loop Desk
+
+- [ ] `pnpm dev:hitl` starts on port 3003.
+- [ ] Approval proposal returns `tool-approveAction` and `data-approval-context` parts.
+- [ ] Live World ID approval is disabled when portal credentials are missing.
+- [ ] Local diagnostic approval and resume flow work.
+- [ ] Server console shows request and response payloads.
+
 ## Docs
 
 - [ ] Starter page reflects final ETHGlobal track copy.
@@ -50,6 +58,6 @@ Run this before publishing the starter pack.
 ## UI/UX Bench
 
 - [ ] `pnpm dev:bench` starts on port 3002.
-- [ ] Bench iframes show both starter apps.
+- [ ] Bench iframes show the starter apps.
 - [ ] Desktop and mobile frame toggles work.
 - [ ] `output/ui-ux/summary.json` reports no failures after `pnpm test:ui`.

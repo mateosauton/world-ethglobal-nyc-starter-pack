@@ -72,6 +72,18 @@ CLI demo:
 pnpm --filter @world-starter/human-agent-console agent:demo
 ```
 
+Focused HITL demo:
+
+```bash
+pnpm dev:hitl
+```
+
+Show:
+
+- Signed approval context when portal credentials are present.
+- Disabled live World ID path when credentials are missing.
+- Local diagnostic approval and resume path.
+
 ## 17:00 - 20:00 Submission checklist
 
 - Use `docs/submission-template.md`.
@@ -79,4 +91,3 @@ pnpm --filter @world-starter/human-agent-console agent:demo
 - Include AgentBook registration if using AgentKit.
 - Include contract address if using World Chain.
 - Include the post-event plan.
-

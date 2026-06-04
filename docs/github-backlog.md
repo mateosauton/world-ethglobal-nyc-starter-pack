@@ -129,8 +129,9 @@ Labels: `track-b`, `human-in-the-loop`, `ai`
 Outcome: The starter pack covers agent workflows that pause for World ID approval.
 
 Acceptance criteria:
-- UI renders a pending agent action.
+- `apps/human-approval-desk` renders a pending agent action.
 - Approval is bound to a World ID action string.
+- Server returns AI SDK-compatible `tool-approveAction` and `data-approval-context` parts.
 - Docs explain when to use Human-in-the-Loop versus AgentBook.
 
 ## Project 5: Track C - Existing Project Upgrade Path
@@ -196,4 +197,3 @@ Acceptance criteria:
 - Guide includes common weak World ID uses and stronger reframes.
 - Guide includes AgentKit fit checks.
 - Guide includes launchability and post-event follow-up prompts.
-

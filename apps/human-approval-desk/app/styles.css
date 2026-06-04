@@ -1,0 +1,349 @@
+:root {
+  background: #f5f7f4;
+  color: #16201d;
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 44px;
+  border: 1px solid rgba(22, 32, 29, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #16201d;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0 16px;
+}
+
+button:hover:not(:disabled) {
+  border-color: rgba(6, 95, 70, 0.55);
+}
+
+button.primary {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.deskShell {
+  min-height: 100vh;
+}
+
+.hero {
+  min-height: 52svh;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  align-items: end;
+  padding: 32px;
+}
+
+.heroImage {
+  object-fit: cover;
+}
+
+.heroShade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(245, 247, 244, 0.02), rgba(245, 247, 244, 0.92)),
+    linear-gradient(90deg, rgba(245, 247, 244, 0.96), rgba(245, 247, 244, 0.18));
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: min(780px, 100%);
+}
+
+.eyebrow {
+  color: #0f766e;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 4.25rem;
+  line-height: 0.92;
+  margin: 0;
+}
+
+h2 {
+  font-size: 2rem;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.subhead {
+  color: #3f4c48;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  max-width: 620px;
+}
+
+.workspaceBand {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 260px minmax(0, 1fr);
+  margin: 0 auto;
+  max-width: 1240px;
+  padding: 26px;
+}
+
+.proposalRail,
+.approvalStage,
+.serverConsole {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(22, 32, 29, 0.11);
+  border-radius: 8px;
+  box-shadow: 0 22px 70px rgba(22, 32, 29, 0.08);
+  padding: 20px;
+}
+
+.proposalRail {
+  align-self: start;
+}
+
+.proposalList {
+  display: grid;
+  gap: 10px;
+}
+
+.proposalOption {
+  align-items: flex-start;
+  display: grid;
+  gap: 6px;
+  height: auto;
+  justify-items: start;
+  min-height: 76px;
+  padding: 14px;
+  text-align: left;
+  width: 100%;
+}
+
+.proposalOption span {
+  color: #33413d;
+  font-weight: 800;
+}
+
+.proposalOption strong {
+  color: #1d4ed8;
+  font-size: 1.1rem;
+}
+
+.proposalOption.active {
+  background: #e6f4ef;
+  border-color: rgba(15, 118, 110, 0.55);
+}
+
+.approvalStage {
+  display: grid;
+  gap: 20px;
+}
+
+.stageHeader,
+.consoleHeader {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.risk {
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  min-width: 86px;
+  padding: 8px 12px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.risk.low {
+  background: #15803d;
+}
+
+.risk.medium {
+  background: #b45309;
+}
+
+.risk.high {
+  background: #b91c1c;
+}
+
+.statusGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statusGrid div {
+  background: #f7faf8;
+  border: 1px solid rgba(22, 32, 29, 0.1);
+  border-radius: 8px;
+  min-height: 82px;
+  padding: 14px;
+}
+
+.statusGrid span,
+label span,
+.approvalDetails dt {
+  color: #5d6c67;
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+.statusGrid strong {
+  color: #16201d;
+  display: block;
+  font-size: 1.15rem;
+}
+
+.editorGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+}
+
+label:first-child {
+  grid-row: span 3;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid rgba(22, 32, 29, 0.16);
+  border-radius: 8px;
+  color: #16201d;
+  min-height: 44px;
+  padding: 12px;
+  width: 100%;
+}
+
+textarea {
+  min-height: 188px;
+  resize: vertical;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.approvalDetails {
+  border-top: 1px solid rgba(22, 32, 29, 0.11);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding-top: 18px;
+}
+
+.approvalDetails div {
+  min-width: 0;
+}
+
+.approvalDetails dd {
+  color: #16201d;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.serverConsole {
+  grid-column: 1 / -1;
+}
+
+pre {
+  background: #111816;
+  border-radius: 8px;
+  color: #d9f99d;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 18px 0 0;
+  min-height: 260px;
+  overflow: auto;
+  padding: 18px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    min-height: 48svh;
+    padding: 22px;
+  }
+
+  h1 {
+    font-size: 2.8rem;
+  }
+
+  h2 {
+    font-size: 1.65rem;
+  }
+
+  .workspaceBand,
+  .editorGrid,
+  .statusGrid,
+  .approvalDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .workspaceBand {
+    padding: 18px;
+  }
+
+  label:first-child {
+    grid-row: auto;
+  }
+
+  .stageHeader,
+  .consoleHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

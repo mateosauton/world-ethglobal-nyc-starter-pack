@@ -13,7 +13,7 @@ This starter pack helps teams build launchable World-native products during ETHG
 3. Copy `.env.example` to `.env.local`.
 4. Run `pnpm test`, `pnpm typecheck`, and `pnpm contracts:test`.
 5. Pick the track path below.
-6. Run `pnpm dev:bench` to compare both starter apps during UI review.
+6. Run `pnpm dev:bench` to compare the starter apps during UI review.
 
 ## Track A: World ID Mini App
 
@@ -45,7 +45,18 @@ What it demonstrates:
 - Server verification with `createAgentkitHooks`.
 - AgentBook live or local-allowlist verification modes.
 - Local agent client demo with visible client and server events.
-- Human-in-the-Loop approval request and approval completion.
+- Local Human-in-the-Loop approval request and approval completion.
+
+Use `apps/human-approval-desk` when the core product is a Human-in-the-Loop agent approval.
+
+What it demonstrates:
+
+- AI SDK message shape with `tool-approveAction` and `data-approval-context`.
+- `requestHumanAuthorization` from `@worldcoin/human-in-the-loop`.
+- `useHumanApproval` from `@worldcoin/human-in-the-loop-react`.
+- Server-signed World ID action context for the exact agent proposal.
+- Verification webhook that resumes the agent only after approval.
+- Local diagnostic approval that is visibly separate from live World ID.
 
 Good project patterns:
 
@@ -95,12 +106,13 @@ Run the bench locally:
 pnpm dev:all
 ```
 
-Open `http://localhost:3002` to compare the Track A and Track B apps in desktop and mobile frames. Run `pnpm test:ui` to capture screenshots and check image loading, overflow, placeholder text, and the primary local flows.
+Open `http://localhost:3002` to compare the starter apps in desktop and mobile frames. Run `pnpm test:ui` to capture screenshots and check image loading, overflow, placeholder text, and the primary local flows.
 
 ## Integration truth table
 
 - `Verify with World ID` is live only when the Developer Portal app ID, RP ID, and RP signing key are configured.
 - `Use local proof` is a diagnostics path and does not represent a real World ID proof.
+- `Use local diagnostic approval` in the HITL desk records a local approval and does not represent a real World ID proof.
 - `Wallet auth` and `Send claim tx` execute through MiniKit only inside World App.
 - `Prepare claim tx` in a browser only shows the payload that World App will execute.
 - AgentKit demo requests use the real AgentKit SDK challenge/sign/retry flow. The default AgentBook lookup is local for repeatable tests; `AGENTBOOK_VERIFIER=live` switches to live AgentBook.
