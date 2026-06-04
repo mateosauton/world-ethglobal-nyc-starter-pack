@@ -66,6 +66,12 @@ Run the automated UI/UX smoke bench after the apps are listening on ports 3000, 
 pnpm test:ui
 ```
 
+Check external release prerequisites after `.env.local` is populated:
+
+```bash
+pnpm release:external
+```
+
 ## Environment
 
 Do not commit real secrets. Put local values in `.env.local` or your deployment provider.

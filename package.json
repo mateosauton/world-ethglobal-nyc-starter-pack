@@ -18,6 +18,7 @@
     "start:all": "pnpm --parallel --filter @world-starter/human-gated-claim --filter @world-starter/human-agent-console --filter @world-starter/ui-test-bench --filter @world-starter/human-approval-desk start",
     "test": "pnpm -r --if-present test",
     "test:ui": "node scripts/ui-ux-smoke.mjs",
+    "release:external": "node scripts/release-external-checks.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "contracts:test": "forge test -C contracts",
