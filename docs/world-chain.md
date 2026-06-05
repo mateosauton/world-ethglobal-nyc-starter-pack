@@ -55,18 +55,32 @@ After deployment:
 2. Add the contract and `claim(address,bytes32)` function to the World Developer Portal allowlist.
 3. Set `CONTRACT_EXPLORER_URL` to the contract URL on the selected explorer.
 4. Run `pnpm release:external` and confirm the target-chain checks pass.
-5. Run `pnpm dev:claim`.
-6. For live World App command testing, expose the local claim app with a public HTTPS tunnel:
+5. Build and run the claim app in production mode for World App testing:
+
+```bash
+pnpm --filter @world-starter/human-gated-claim build
+pnpm start:claim
+```
+
+Do not point World App at `next dev`. Public dev-server HMR can be rejected by the tunnel host, which leaves the HTML visible but prevents React handlers from hydrating.
+
+6. Expose the production claim app with a public HTTPS tunnel:
 
 ```bash
 tmole 3000
 ```
 
-7. Put that tunnel URL in Developer Portal as the Mini App integration URL and associated domain. Vercel previews are useful for browser QA, but a local tunnel is the safer handoff for live World App command testing because it loads the exact running dev app.
-8. Open the Mini App directly in World App with `worldapp://mini-app?app_id=<app_id>&path=%2F`.
+7. Confirm the tunneled surface hydrates:
+
+```bash
+WORLD_APP_SURFACE_URL=https://your-tunnel.example pnpm test:world-app-surface
+```
+
+8. Put that tunnel URL in Developer Portal as the Mini App integration URL and associated domain. Vercel previews are useful for browser QA, but a tunnel is the safer handoff for live World App command testing because it loads the exact running app.
+9. Open the Mini App directly in World App with `worldapp://mini-app?app_id=<app_id>&path=%2F`.
    If a device cannot open custom schemes from the scanner, use the universal fallback `https://world.org/mini-app?app_id=<app_id>&path=%2F`.
-9. Verify, prepare claim, and call MiniKit `sendTransaction` from World App.
-10. Copy the displayed `userOpHash` and record it:
+10. Verify, prepare claim, and call MiniKit `sendTransaction` from World App.
+11. Copy the displayed `userOpHash` and record it:
 
 ```bash
 pnpm release:record-userop 0x...

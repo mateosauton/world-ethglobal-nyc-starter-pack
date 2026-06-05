@@ -114,11 +114,18 @@ The examples are explicit about which paths are live and which paths are local d
 
 - Live IDKit requires `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, and a signing key. The claim app reads `WORLD_RP_SIGNING_KEY`; the official Human-in-the-Loop package reads `WORLD_SIGNING_KEY`, and the HITL desk accepts either.
 - MiniKit wallet auth and transaction execution are World App paths. Browser mode can prepare payloads and run local diagnostics, but it does not claim that a MiniKit command executed.
+- For World App command testing, build the claim app and expose `next start` through a tunnel. Do not point Developer Portal at `next dev`; public dev-server HMR can be blocked and leave the page visible but unhydrated.
 - AgentKit uses `createAgentkitClient` and `createAgentkitHooks`. The default AgentBook verifier is a local allowlist for repeatable testing; set `AGENTBOOK_VERIFIER=live` to use the live AgentBook lookup.
 - The HITL desk returns the same AI SDK message parts consumed by `useHumanApproval`: `tool-approveAction` and `data-approval-context`.
 - `apps/human-approval-desk/lib/official-hitl-tool.ts` shows the official `requestHumanAuthorization` executor that agent runtimes can wrap as a tool.
 
 Production proof validation must happen in a backend or smart contract. The local proof path is only for diagnostics and is labeled as such in the UI.
+
+Check a public World App test surface before scanning:
+
+```bash
+WORLD_APP_SURFACE_URL=https://your-tunnel.example pnpm test:world-app-surface
+```
 
 ## Useful docs
 
