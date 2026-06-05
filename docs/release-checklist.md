@@ -6,7 +6,7 @@ Last audit: 2026-06-05.
 
 Release status: not publish-ready until the unchecked live World App proof and `sendTransaction` gates are completed.
 
-Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, and the claim app preview was redeployed with chain ID `480`. The claim UI now displays the final transaction hash after polling the Developer Portal user operation endpoint. `pnpm release:external` passes 13 of 14 gates and fails only `World App sendTransaction user operation captured`.
+Continuation audit: local apps, Vercel production aliases, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, and the claim app production alias was redeployed with chain ID `480`. The claim UI now displays the final transaction hash after polling the Developer Portal user operation endpoint. `pnpm release:external` passes 13 of 14 gates and fails only `World App sendTransaction user operation captured`.
 
 External gate command: run `pnpm release:external` after filling `.env.local` with the real World app, RP, deployer, portal, allowlist, user operation, and explorer evidence. The command writes `output/release-external-checks.json` and exits non-zero until the selected chain and World App evidence are satisfied.
 
@@ -24,8 +24,8 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
   Evidence: `forge build -C contracts` completed.
 - [x] `pnpm test:ui` passes with apps running on ports 3000, 3001, 3002, and 3003.
   Evidence: `pnpm test:ui` passed after the bench URL fix; `output/ui-ux/summary.json` reports no failures across desktop, mobile, local flows, and duplicate-nullifier API check.
-- [x] Vercel preview deployments build from the monorepo root.
-  Evidence: Vercel deployment metadata reports `READY` for claim (`https://human-gated-claim-rgk4umlb6-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-8s7u6h07p-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-dpnbilh99-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-8wiolctov-mateo-sautons-projects.vercel.app`).
+- [x] Vercel production deployments are public.
+  Evidence: Vercel deployment metadata reports `READY` for claim (`https://human-gated-claim.vercel.app`), agent (`https://human-agent-console.vercel.app`), HITL (`https://human-approval-desk.vercel.app`), and bench (`https://ui-test-bench.vercel.app`); direct HTTP checks returned `200` for all four aliases after SSO deployment protection was disabled.
 - [x] No real secrets are committed.
   Evidence: tracked env files are limited to `.env.example`; scan found no provided portal key or real app ID.
 - [x] `.env.example` has placeholders only.
@@ -46,7 +46,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Browser claim path prepares payload without claiming execution.
   Evidence: `pnpm test:ui` verified `Prepared MiniKit transaction payload. Open in World App to execute.`
 - [ ] World App claim path executes MiniKit `sendTransaction`.
-  Blocked: requires opening the Mini App inside World App with a live wallet and capturing the returned user operation hash. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; the UI displays the final transaction hash after polling the Developer Portal user operation endpoint, and `pnpm release:record-userop 0x...` records the user operation hash in `.env.local`. `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
+  Blocked: requires opening the Mini App inside World App with a live wallet and capturing the returned user operation hash. The Developer Portal Mini App integration URL is `https://human-gated-claim.vercel.app`, and `pnpm test:world-app-surface` verified that it renders publicly, hydrates, and exposes the `worldapp://mini-app` deep link. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; the UI displays the final transaction hash after polling the Developer Portal user operation endpoint, and `pnpm release:record-userop 0x...` records the user operation hash in `.env.local`. `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
 
 ## Contracts
 
@@ -55,7 +55,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Contract address is added to `.env.local`.
   Evidence: `.env.local` contains `NEXT_PUBLIC_CLAIM_CONTRACT_ADDRESS=0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`, `NEXT_PUBLIC_WORLD_CHAIN_ID=480`, and the World Chain mainnet RPC.
 - [x] Contract is allowlisted in the World Developer Portal.
-  Evidence: Developer Portal MCP `configure_mini_app` accepted `contracts:["0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe"]` with the deployed claim integration URL, and `pnpm release:external` passes `Developer Portal contract allowlist confirmed`.
+  Evidence: Developer Portal MCP `configure_mini_app` accepted `contracts:["0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe"]` with `integration_url:"https://human-gated-claim.vercel.app"`, and `pnpm release:external` passes `Developer Portal contract allowlist confirmed`.
 - [x] Explorer link is captured for submissions.
   Evidence: `.env.local` contains `CONTRACT_EXPLORER_URL=https://worldscan.org/address/0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`, and `pnpm release:external` passes `World Chain explorer link captured`.
 
@@ -68,7 +68,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Signed unregistered agent is rejected.
   Evidence: `POST /api/agent-demo` with `signed-unregistered` returned status `401` and `agent_not_verified`.
 - [x] Registered demo agent succeeds through `createAgentkitClient` and `createAgentkitHooks`.
-  Evidence: `POST /api/agent-demo` with `signed-allowed` returned status `200`, `ok:true`, and hook events.
+  Evidence: `POST /api/agent-demo` with `signed-allowed` returned status `200`, `ok:true`, and hook events; Playwright also verified the production flow at `https://human-agent-console.vercel.app`.
 - [x] Human approval request and approval completion work.
   Evidence: `pnpm test:ui` verified request and local approval completion in the agent flow.
 - [x] AgentBook registration instructions are visible.
