@@ -6,7 +6,7 @@ Last audit: 2026-06-05.
 
 Release status: not publish-ready until the unchecked live World App proof and `sendTransaction` gates are completed.
 
-Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, the claim app preview was redeployed with chain ID `480`, and Developer Portal MCP accepted the Mini App integration URL plus contract allowlist update. The claim UI now displays and copies the `MiniKit.sendTransaction` user operation hash after submission. `pnpm release:external` now fails only `World App sendTransaction user operation captured`.
+Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, and the claim app preview was redeployed with chain ID `480`. The claim UI now displays the final transaction hash after polling the Developer Portal user operation endpoint. `pnpm release:external` passes 13 of 14 gates and fails only `World App sendTransaction user operation captured`.
 
 External gate command: run `pnpm release:external` after filling `.env.local` with the real World app, RP, deployer, portal, allowlist, user operation, and explorer evidence. The command writes `output/release-external-checks.json` and exits non-zero until the selected chain and World App evidence are satisfied.
 
@@ -23,9 +23,9 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] `pnpm contracts:build` passes.
   Evidence: `forge build -C contracts` completed.
 - [x] `pnpm test:ui` passes with apps running on ports 3000, 3001, 3002, and 3003.
-  Evidence: `output/ui-ux/summary.json` reports no failures across desktop, mobile, local flows, and duplicate-nullifier API check.
+  Evidence: `pnpm test:ui` passed after the bench URL fix; `output/ui-ux/summary.json` reports no failures across desktop, mobile, local flows, and duplicate-nullifier API check.
 - [x] Vercel preview deployments build from the monorepo root.
-  Evidence: previews are ready for claim (`https://human-gated-claim-78t38ph5w-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-5e14d2ln6-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-h3gbisupl-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-e0yw7idd6-mateo-sautons-projects.vercel.app`).
+  Evidence: Vercel deployment metadata reports `READY` for claim (`https://human-gated-claim-rgk4umlb6-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-8s7u6h07p-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-dpnbilh99-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-8wiolctov-mateo-sautons-projects.vercel.app`).
 - [x] No real secrets are committed.
   Evidence: tracked env files are limited to `.env.example`; scan found no provided portal key or real app ID.
 - [x] `.env.example` has placeholders only.
@@ -36,7 +36,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] `pnpm dev:claim` starts.
   Evidence: `http://localhost:3000` returned 200 from the detached `world-claim` screen session.
 - [ ] Live World ID verify is tested with a signed RP context.
-  Blocked: signed context generation works (`GET /api/world-id/context` returns `configured:true`, `mode:signed`, and the expected RP ID), but a live IDKit proof has not been completed inside World App. `pnpm release:external` now passes the app ID, RP ID, and signing key gates.
+  Blocked: signed context generation works (`GET /api/world-id/context` returns `configured:true`, `mode:signed`, and the expected RP ID), and Playwright can open the IDKit modal and extract a World App proof URL, but a live IDKit proof has not been completed inside World App. `pnpm release:external` passes the app ID, RP ID, and signing key gates.
 - [x] Local proof is visibly labeled as diagnostics.
   Evidence: `pnpm test:ui` verified the claim flow text `Local proof accepted for diagnostics only.`
 - [x] Wallet auth nonce endpoint works.
@@ -46,7 +46,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Browser claim path prepares payload without claiming execution.
   Evidence: `pnpm test:ui` verified `Prepared MiniKit transaction payload. Open in World App to execute.`
 - [ ] World App claim path executes MiniKit `sendTransaction`.
-  Blocked: requires opening the deployed Mini App inside World App with a live wallet and capturing the returned user operation hash. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; the UI displays and copies `result.data.userOpHash` after `MiniKit.sendTransaction`, and `pnpm release:record-userop 0x...` records it in `.env.local`. `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
+  Blocked: requires opening the Mini App inside World App with a live wallet and capturing the returned user operation hash. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; the UI displays the final transaction hash after polling the Developer Portal user operation endpoint, and `pnpm release:record-userop 0x...` records the user operation hash in `.env.local`. `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
 
 ## Contracts
 

@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const apps = [
   {
     id: "claim",
     title: "Human-Gated Claim",
+    deployedUrl:
+      process.env.NEXT_PUBLIC_HUMAN_GATED_CLAIM_URL ??
+      "http://localhost:3000",
     port: 3000,
     path: "Track A",
     summary: "Wallet auth, World ID proof, nullifier state, and claim transaction."
@@ -13,6 +16,9 @@ const apps = [
   {
     id: "agent",
     title: "Human Agent Console",
+    deployedUrl:
+      process.env.NEXT_PUBLIC_HUMAN_AGENT_CONSOLE_URL ??
+      "http://localhost:3001",
     port: 3001,
     path: "Track B",
     summary: "Agent challenge, protected resource, and Human-in-the-Loop approval."
@@ -20,6 +26,9 @@ const apps = [
   {
     id: "hitl",
     title: "Verified Action Desk",
+    deployedUrl:
+      process.env.NEXT_PUBLIC_HUMAN_APPROVAL_DESK_URL ??
+      "http://localhost:3003",
     port: 3003,
     path: "HITL",
     summary: "Official Human-in-the-Loop message context, World ID approval, and resume gate."
@@ -39,7 +48,12 @@ type Viewport = "desktop" | "mobile";
 
 export function Bench() {
   const [selected, setSelected] = useState<(typeof apps)[number]["id"]>("claim");
+  const [useLocalUrls, setUseLocalUrls] = useState(true);
   const [viewport, setViewport] = useState<Viewport>("desktop");
+
+  useEffect(() => {
+    setUseLocalUrls(isLocalHost(window.location.hostname));
+  }, []);
 
   const app = useMemo(
     () => apps.find((candidate) => candidate.id === selected) ?? apps[0],
@@ -47,6 +61,7 @@ export function Bench() {
   );
 
   const frameClass = viewport === "desktop" ? "frame desktop" : "frame mobile";
+  const appUrl = getAppUrl(app, useLocalUrls);
 
   return (
     <main>
@@ -62,13 +77,13 @@ export function Bench() {
         <div className="statusStack" aria-label="Local app endpoints">
           {apps.map((candidate) => (
             <a
-              href={`http://localhost:${candidate.port}`}
+              href={getAppUrl(candidate, useLocalUrls)}
               key={candidate.id}
               target="_blank"
               rel="noreferrer"
             >
               <span>{candidate.path}</span>
-              <strong>localhost:{candidate.port}</strong>
+              <strong>{formatEndpoint(getAppUrl(candidate, useLocalUrls), candidate.port)}</strong>
             </a>
           ))}
         </div>
@@ -112,7 +127,7 @@ export function Bench() {
             <span>{viewport}</span>
           </div>
           <div className={frameClass}>
-            <iframe title={`${app.title} ${viewport} preview`} src={`http://localhost:${app.port}`} />
+            <iframe title={`${app.title} ${viewport} preview`} src={appUrl} />
           </div>
         </div>
 
@@ -136,4 +151,20 @@ export function Bench() {
       </section>
     </main>
   );
+}
+
+function getAppUrl(app: (typeof apps)[number], useLocalUrls: boolean) {
+  return useLocalUrls ? `http://localhost:${app.port}` : app.deployedUrl;
+}
+
+function isLocalHost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function formatEndpoint(url: string, port: number) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return `localhost:${port}`;
+  }
 }
