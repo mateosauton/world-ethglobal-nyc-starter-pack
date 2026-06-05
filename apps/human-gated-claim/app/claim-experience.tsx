@@ -33,6 +33,7 @@ type ContextResponse = {
 type VerifyResponse = {
   mode?: string;
   nullifier: string;
+  verificationLevel?: string;
 };
 
 type WalletAuthResponse = {
@@ -51,12 +52,24 @@ type PreparedClaimPayload = {
 type SendTransactionResult = {
   executedWith: string;
   data?: {
+    hash?: string;
+    transactionHash?: string;
+    transaction_hash?: string;
+    txHash?: string;
     userOpHash?: string;
     status?: string;
     version?: number;
     from?: string;
     timestamp?: string;
   };
+};
+
+type UserOperationResponse = {
+  nonce?: string | null;
+  sender?: string | null;
+  status: "pending" | "success" | "failed";
+  transaction_hash?: string | null;
+  userOpHash: string;
 };
 
 type ApiLog = {
@@ -70,6 +83,9 @@ type ApiLog = {
 
 const localAddress = "0x2222222222222222222222222222222222222222";
 
+const receiptPollAttempts = 8;
+const receiptPollDelayMs = 2_000;
+
 export function ClaimExperience() {
   const { isInstalled } = useMiniKit();
   const [open, setOpen] = useState(false);
@@ -77,11 +93,20 @@ export function ClaimExperience() {
   const [contextDiagnostics, setContextDiagnostics] =
     useState<ContextDiagnostics | null>(null);
   const [step, setStep] = useState<StepState>("idle");
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [nullifier, setNullifier] = useState<string | null>(null);
-  const [userOpHash, setUserOpHash] = useState<string | null>(null);
+  const [signedWalletAddress, setSignedWalletAddress] = useState<string | null>(null);
+  const [diagnosticWalletAddress, setDiagnosticWalletAddress] = useState<string | null>(null);
+  const [liveProof, setLiveProof] = useState<{
+    nullifier: string;
+    verificationLevel: string;
+  } | null>(null);
+  const [diagnosticNullifier, setDiagnosticNullifier] = useState<string | null>(null);
+  const [claimEvidence, setClaimEvidence] = useState<{
+    status?: string;
+    txHash?: string | null;
+    userOpHash?: string | null;
+  }>({});
   const [message, setMessage] = useState("Ready for one verified human.");
-  const [logs, setLogs] = useState<ApiLog[]>([]);
+  const [log, setLog] = useState<ApiLog | null>(null);
 
   const worldAppId = process.env.NEXT_PUBLIC_WORLD_APP_ID as `app_${string}`;
   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION ?? "one-human-one-claim";
@@ -93,6 +118,8 @@ export function ClaimExperience() {
       ? `worldapp://mini-app?app_id=${worldAppId}&path=%2F`
       : null;
   const isWorldApp = Boolean(isInstalled) || MiniKit.isInWorldApp();
+  const claimNullifier = liveProof?.nullifier ?? diagnosticNullifier;
+  const claimRecipient = signedWalletAddress ?? diagnosticWalletAddress ?? localAddress;
   const liveWorldIdReady = Boolean(
     rpContext &&
       contextDiagnostics?.configured &&
@@ -117,13 +144,8 @@ export function ClaimExperience() {
   }, []);
 
   useEffect(() => {
-    pushLog("MiniKit environment", {
-      response: {
-        isInstalled: Boolean(isInstalled),
-        isInWorldApp: MiniKit.isInWorldApp(),
-        worldAppIdConfigured: Boolean(worldAppId && worldAppId.startsWith("app_"))
-      }
-    });
+    void isInstalled;
+    void worldAppId;
   }, [isInstalled, worldAppId]);
 
   const stages = useMemo(
@@ -138,7 +160,7 @@ export function ClaimExperience() {
   async function authenticateWallet() {
     if (!isWorldApp) {
       setMessage("MiniKit wallet auth is only available inside World App.");
-      pushLog("MiniKit.walletAuth skipped", {
+      pushLog("Wallet auth", {
         response: {
           reason: "not_in_world_app",
           next: "Open this URL as a World Mini App or use the local wallet diagnostic."
@@ -161,25 +183,38 @@ export function ClaimExperience() {
       nonce: nonceResponse.data.nonce,
       statement: "Authenticate for one-human-one-claim."
     });
-    pushLog("MiniKit.walletAuth result", { response: result });
 
     const verifyResponse = await requestJson("POST /api/wallet-auth/verify", "/api/wallet-auth/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(result.data)
     });
+    pushLog("Wallet auth", {
+      request: {
+        nonce: nonceResponse.data.nonce,
+        statement: "Authenticate for one-human-one-claim."
+      },
+      response: {
+        command: result,
+        verification: verifyResponse.data
+      },
+      status: verifyResponse.status
+    });
     if (!verifyResponse.ok) {
       setMessage("Wallet auth verification failed.");
       return;
     }
 
-    setWalletAddress(result.data.address);
+    const signedAddress = extractAddress(result.data) ?? extractAddress(verifyResponse.data);
+    setSignedWalletAddress(signedAddress);
+    setDiagnosticWalletAddress(null);
     setMessage("Wallet authenticated. Proof is next.");
   }
 
   function useLocalWallet() {
     setStep("wallet");
-    setWalletAddress(localAddress);
+    setSignedWalletAddress(null);
+    setDiagnosticWalletAddress(localAddress);
     setMessage("Local wallet selected for browser diagnostics.");
     pushLog("Local wallet diagnostic", {
       response: {
@@ -201,9 +236,22 @@ export function ClaimExperience() {
       throw new Error("Proof verification failed");
     }
 
-    setNullifier(response.data.nullifier);
+    setLiveProof({
+      nullifier: response.data.nullifier,
+      verificationLevel:
+        response.data.verificationLevel ?? extractVerificationLevel(result) ?? "unknown"
+    });
+    setDiagnosticNullifier(null);
     setStep("verified");
     setMessage("Human proof accepted. Claim can be prepared.");
+    pushLog("Verify with World ID", {
+      request: {
+        action,
+        verificationLevel: extractVerificationLevel(result)
+      },
+      response: response.data,
+      status: response.status
+    });
   }
 
   async function useLocalProof() {
@@ -213,18 +261,31 @@ export function ClaimExperience() {
       body: JSON.stringify({ localDevProof: true, action })
     });
     if (!response.ok) {
-      setNullifier(null);
+      setDiagnosticNullifier(null);
       setMessage("Local proof was rejected.");
+      pushLog("Local proof diagnostic", {
+        response: response.data,
+        status: response.status
+      });
       return;
     }
-    setNullifier(response.data.nullifier);
+    setLiveProof(null);
+    setDiagnosticNullifier(response.data.nullifier);
     setStep("verified");
     setMessage("Local proof accepted for diagnostics only.");
+    pushLog("Local proof diagnostic", {
+      request: { action, localDevProof: true },
+      response: response.data,
+      status: response.status
+    });
   }
 
   async function sendClaim() {
-    if (!nullifier) {
+    if (!claimNullifier) {
       setMessage("Verify first, then claim.");
+      pushLog(isWorldApp ? "Send claim tx" : "Prepare claim tx", {
+        response: { error: "missing_nullifier" }
+      });
       return;
     }
 
@@ -235,13 +296,21 @@ export function ClaimExperience() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          recipient: walletAddress ?? localAddress,
-          nullifierHash: nullifier
+          recipient: claimRecipient,
+          nullifierHash: claimNullifier
         })
       }
     );
     if (!response.ok) {
       setMessage("Claim transaction preparation failed.");
+      pushLog(isWorldApp ? "Send claim tx" : "Prepare claim tx", {
+        request: {
+          nullifierHash: claimNullifier,
+          recipient: claimRecipient
+        },
+        response: response.data,
+        status: response.status
+      });
       return;
     }
     const payload = response.data;
@@ -249,6 +318,14 @@ export function ClaimExperience() {
 
     if (!isWorldApp) {
       setMessage("Prepared MiniKit transaction payload. Open in World App to execute.");
+      pushLog("Prepare claim tx", {
+        request: {
+          nullifierHash: claimNullifier,
+          recipient: claimRecipient
+        },
+        response: payload,
+        status: response.status
+      });
       return;
     }
 
@@ -256,30 +333,90 @@ export function ClaimExperience() {
       const result = (await MiniKit.sendTransaction({
         ...payload
       })) as SendTransactionResult;
-      pushLog("MiniKit.sendTransaction result", { response: result });
 
       const capturedHash = result.data?.userOpHash ?? null;
-      setUserOpHash(capturedHash);
+      const immediateTxHash = extractTransactionHash(result.data);
+      setClaimEvidence({
+        status: result.data?.status,
+        txHash: immediateTxHash,
+        userOpHash: capturedHash
+      });
       setStep("submitted");
       setMessage(
-        capturedHash
-          ? "Claim submitted. UserOp hash captured."
-          : `Claim submitted with ${result.executedWith}.`
+        immediateTxHash
+          ? "Claim submitted. Transaction hash captured."
+          : capturedHash
+            ? "Claim submitted. Waiting for transaction hash."
+            : `Claim submitted with ${result.executedWith}.`
       );
+      pushLog("Send claim tx", {
+        request: payload,
+        response: {
+          command: result,
+          receipt: null
+        }
+      });
+
+      if (capturedHash && !immediateTxHash) {
+        const receipt = await pollUserOperation(capturedHash);
+        const txHash = receipt?.transaction_hash ?? null;
+        setClaimEvidence({
+          status: receipt?.status ?? result.data?.status,
+          txHash,
+          userOpHash: capturedHash
+        });
+        setMessage(
+          txHash
+            ? "Claim submitted. Transaction hash captured."
+            : receipt?.status === "failed"
+              ? "Claim user operation failed."
+              : "Claim submitted. Transaction hash is still pending."
+        );
+        pushLog("Send claim tx", {
+          request: payload,
+          response: {
+            command: result,
+            receipt
+          }
+        });
+      }
     } catch (error) {
-      pushLog("MiniKit.sendTransaction error", {
+      pushLog("Send claim tx", {
         response: serializeError(error)
       });
       setMessage("MiniKit sendTransaction failed.");
     }
   }
 
-  async function copyUserOpHash() {
-    if (!userOpHash) {
+  async function pollUserOperation(userOpHash: string) {
+    let latest: UserOperationResponse | null = null;
+
+    for (let attempt = 0; attempt < receiptPollAttempts; attempt += 1) {
+      if (attempt > 0) {
+        await delay(receiptPollDelayMs);
+      }
+      const response = await requestJson<UserOperationResponse>(
+        "GET /api/claim/userop",
+        `/api/claim/userop/${userOpHash}`
+      );
+      if (response.ok) {
+        latest = response.data;
+        if (response.data.transaction_hash || response.data.status === "failed") {
+          break;
+        }
+      }
+    }
+
+    return latest;
+  }
+
+  async function copyClaimHash() {
+    const hash = claimEvidence.txHash ?? claimEvidence.userOpHash;
+    if (!hash) {
       return;
     }
-    await navigator.clipboard.writeText(userOpHash);
-    pushLog("UserOp hash copied", { response: { userOpHash } });
+    await navigator.clipboard.writeText(hash);
+    pushLog("Copy claim hash", { response: { hash } });
   }
 
   async function requestJson<T>(
@@ -287,34 +424,22 @@ export function ClaimExperience() {
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<{ data: T; ok: boolean; status: number }> {
+    void label;
     const requestBody = parseJsonBody(init?.body);
     const response = await fetch(input, init);
     const text = await response.text();
     const data = text ? (JSON.parse(text) as T) : ({} as T);
-    pushLog(label, {
-      request: {
-        body: requestBody,
-        method: init?.method ?? "GET",
-        url: typeof input === "string" ? input : input.toString()
-      },
-      response: data,
-      status: response.status
-    });
+    void requestBody;
     return { data, ok: response.ok, status: response.status };
   }
 
   function pushLog(label: string, entry: Omit<ApiLog, "id" | "label" | "time">) {
-    setLogs((current) =>
-      [
-        {
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          label,
-          time: new Date().toISOString(),
-          ...entry
-        },
-        ...current
-      ].slice(0, 12)
-    );
+    setLog({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      label,
+      time: new Date().toISOString(),
+      ...entry
+    });
   }
 
   return (
@@ -359,11 +484,20 @@ export function ClaimExperience() {
             </div>
             <div>
               <dt>Wallet</dt>
-              <dd>{walletAddress ? shortAddress(walletAddress) : "Not connected"}</dd>
+              <dd>{signedWalletAddress ? shortAddress(signedWalletAddress) : ""}</dd>
             </div>
             <div>
               <dt>Nullifier</dt>
-              <dd>{nullifier ? shortAddress(nullifier) : "Not verified"}</dd>
+              <dd>
+                {liveProof ? (
+                  <span className="evidenceStack">
+                    <span>{shortAddress(liveProof.nullifier)}</span>
+                    <span>{formatVerificationLevel(liveProof.verificationLevel)}</span>
+                  </span>
+                ) : (
+                  ""
+                )}
+              </dd>
             </div>
             <div>
               <dt>Chain</dt>
@@ -374,8 +508,8 @@ export function ClaimExperience() {
               <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
             </div>
             <div>
-              <dt>UserOp</dt>
-              <dd>{userOpHash ? shortAddress(userOpHash) : "Not submitted"}</dd>
+              <dt>Tx Hash</dt>
+              <dd>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : ""}</dd>
             </div>
           </dl>
         </div>
@@ -399,7 +533,7 @@ export function ClaimExperience() {
               Verify with World ID
             </button>
             <button onClick={useLocalProof}>Use local proof</button>
-            <button onClick={sendClaim} disabled={!nullifier}>
+            <button onClick={sendClaim} disabled={!claimNullifier}>
               {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
             </button>
             {worldAppLink && !isWorldApp ? (
@@ -416,13 +550,26 @@ export function ClaimExperience() {
           <p className="eyebrow">Server console</p>
           <h2>Logs and responses</h2>
         </div>
-        {userOpHash ? (
+        {claimEvidence.userOpHash || claimEvidence.txHash ? (
           <div className="evidenceBar">
-            <code>{userOpHash}</code>
-            <button onClick={copyUserOpHash}>Copy hash</button>
+            <div>
+              {claimEvidence.txHash ? (
+                <p>
+                  <span>Tx hash</span>
+                  <code>{claimEvidence.txHash}</code>
+                </p>
+              ) : null}
+              {claimEvidence.userOpHash ? (
+                <p>
+                  <span>UserOp</span>
+                  <code>{claimEvidence.userOpHash}</code>
+                </p>
+              ) : null}
+            </div>
+            <button onClick={copyClaimHash}>Copy hash</button>
           </div>
         ) : null}
-        <pre>{logs.length ? JSON.stringify(logs, null, 2) : "No requests yet."}</pre>
+        <pre>{log ? JSON.stringify(log, null, 2) : "No button requests yet."}</pre>
       </section>
 
       {rpContext ? (
@@ -434,7 +581,7 @@ export function ClaimExperience() {
           rp_context={rpContext}
           allow_legacy_proofs={false}
           environment="staging"
-          preset={orbLegacy({ signal: walletAddress ?? localAddress })}
+          preset={orbLegacy({ signal: signedWalletAddress ?? localAddress })}
           handleVerify={handleVerify}
           onSuccess={() => setOpen(false)}
           onError={(errorCode) => setMessage(`World ID error: ${errorCode}`)}
@@ -446,6 +593,75 @@ export function ClaimExperience() {
 
 function shortAddress(value: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
+}
+
+function formatVerificationLevel(value: string) {
+  return value.replace(/[_-]/g, " ");
+}
+
+function extractAddress(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const candidates = [value.address, value.walletAddress, value.from];
+  const match = candidates.find(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && /^0x[0-9a-fA-F]{40}$/.test(candidate)
+  );
+  return match ?? null;
+}
+
+function extractVerificationLevel(value: unknown): string | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (typeof value.verification_level === "string") {
+    return value.verification_level;
+  }
+  if (typeof value.verificationLevel === "string") {
+    return value.verificationLevel;
+  }
+  if (Array.isArray(value.responses)) {
+    const response = value.responses.find(isRecord);
+    if (response) {
+      if (typeof response.identifier === "string") {
+        return response.identifier;
+      }
+      if (typeof response.verification_level === "string") {
+        return response.verification_level;
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractTransactionHash(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const candidates = [
+    value.transaction_hash,
+    value.transactionHash,
+    value.txHash,
+    value.hash
+  ];
+  const match = candidates.find(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && /^0x[0-9a-fA-F]{64}$/.test(candidate)
+  );
+  return match ?? null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function parseJsonBody(body: BodyInit | null | undefined) {

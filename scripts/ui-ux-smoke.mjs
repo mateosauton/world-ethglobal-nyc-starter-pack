@@ -101,8 +101,25 @@ async function runClaimFlow(browser) {
   const page = await browser.newPage({ viewport: viewports[1] });
   try {
     await page.goto(targets[0].url, { waitUntil: "networkidle", timeout: 15_000 });
+    await expectVisibleText(page, "No button requests yet.", "claim console idle");
+    await expectStatusValue(page, "Wallet", "", "wallet starts empty");
+    await expectStatusValue(page, "Nullifier", "", "nullifier starts empty");
+
+    await page.getByRole("button", { name: "Use local wallet" }).click();
+    await expectVisibleText(
+      page,
+      "Local wallet selected for browser diagnostics.",
+      "claim local wallet"
+    );
+    await expectStatusValue(page, "Wallet", "", "local wallet stays out of live stats");
+    await expectConsoleLabel(page, "Local wallet diagnostic", "local wallet console");
+
     await page.getByRole("button", { name: "Use local proof" }).click();
     await expectVisibleText(page, "Local proof accepted for diagnostics only.", "claim proof");
+    await expectStatusValue(page, "Nullifier", "", "local proof stays out of live stats");
+    await expectConsoleLabel(page, "Local proof diagnostic", "local proof console");
+    await expectConsoleMissing(page, "Local wallet diagnostic", "console replaces previous action");
+
     const submitButton = page.getByRole("button", { name: "Prepare claim tx" });
     await submitButton.waitFor({ state: "visible", timeout: 5_000 });
     await page.waitForFunction(
@@ -124,6 +141,9 @@ async function runClaimFlow(browser) {
       "0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe",
       "claim contract target"
     );
+    await expectConsoleLabel(page, "Prepare claim tx", "prepare console");
+    await expectConsoleMissing(page, "Local proof diagnostic", "console replaces proof action");
+
     await page.screenshot({
       path: path.join(outputDir, "claim-flow-mobile.png"),
       fullPage: true
@@ -269,6 +289,40 @@ async function expectVisibleText(page, text, label) {
   await locator.waitFor({ state: "visible", timeout: 5_000 }).catch((error) => {
     throw new Error(`${label}: ${error.message}`);
   });
+}
+
+async function expectStatusValue(page, label, expected, detail) {
+  const actual = await page.evaluate((statusLabel) => {
+    const rows = Array.from(document.querySelectorAll("dl div"));
+    const row = rows.find((candidate) => candidate.querySelector("dt")?.textContent === statusLabel);
+    return row?.querySelector("dd")?.textContent?.trim() ?? null;
+  }, label);
+
+  if (actual !== expected) {
+    throw new Error(`${detail}: expected "${expected}", received "${actual}"`);
+  }
+}
+
+async function expectConsoleLabel(page, expected, label) {
+  const actual = await page.evaluate(() => {
+    const text = document.querySelector("pre")?.textContent ?? "";
+    try {
+      return JSON.parse(text).label;
+    } catch {
+      return null;
+    }
+  });
+
+  if (actual !== expected) {
+    throw new Error(`${label}: expected console label "${expected}", received "${actual}"`);
+  }
+}
+
+async function expectConsoleMissing(page, forbidden, label) {
+  const text = await page.locator("pre").innerText();
+  if (text.includes(forbidden)) {
+    throw new Error(`${label}: console still contains "${forbidden}"`);
+  }
 }
 
 async function expectEqual(actual, expected, label) {

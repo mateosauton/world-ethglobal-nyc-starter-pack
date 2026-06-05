@@ -179,6 +179,20 @@ dd {
   margin: 0;
 }
 
+.evidenceStack {
+  align-items: flex-end;
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.evidenceStack span:last-child {
+  color: #64746f;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
 .claimPanel {
   display: grid;
   gap: 16px;
@@ -226,6 +240,23 @@ dd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.evidenceBar p {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.evidenceBar p + p {
+  margin-top: 10px;
+}
+
+.evidenceBar span {
+  color: #64746f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 pre {

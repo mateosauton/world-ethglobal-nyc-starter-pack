@@ -20,7 +20,12 @@ export async function POST(request: NextRequest) {
     if (!nullifiers.tryRecord(nullifier, action)) {
       return NextResponse.json({ error: "duplicate nullifier" }, { status: 409 });
     }
-    return NextResponse.json({ success: true, nullifier, mode: "local-dev-proof" });
+    return NextResponse.json({
+      success: true,
+      nullifier,
+      verificationLevel: "local-diagnostic",
+      mode: "local-dev-proof"
+    });
   }
 
   const rpId = process.env.WORLD_RP_ID;
@@ -47,7 +52,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ...result, mode: "live-world-id" });
+  return NextResponse.json({
+    ...result,
+    verificationLevel: extractVerificationLevel(body) ?? extractVerificationLevel(result),
+    mode: "live-world-id"
+  });
 }
 
 function localDiagnosticNullifier(body: {
@@ -73,4 +82,35 @@ function isLocalRequest(request: NextRequest) {
     (hostname) =>
       hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
   );
+}
+
+function extractVerificationLevel(value: unknown): string | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  if (typeof value.verification_level === "string") {
+    return value.verification_level;
+  }
+  if (typeof value.verificationLevel === "string") {
+    return value.verificationLevel;
+  }
+  if (Array.isArray(value.responses)) {
+    const response = value.responses.find(isRecord);
+    if (!response) {
+      return undefined;
+    }
+    if (typeof response.identifier === "string") {
+      return response.identifier;
+    }
+    if (typeof response.verification_level === "string") {
+      return response.verification_level;
+    }
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
