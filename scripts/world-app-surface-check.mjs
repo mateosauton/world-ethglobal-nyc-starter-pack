@@ -60,8 +60,8 @@ try {
 
   const openWorldApp = page.getByRole("link", { name: "Open World App" });
   const href = await openWorldApp.getAttribute("href");
-  if (!href?.startsWith("worldapp://mini-app?")) {
-    failures.push(`Open World App link is not a Mini App deep link: ${href}`);
+  if (!isWorldMiniAppUrl(href)) {
+    failures.push(`Open World App link is not the World mini-app URL: ${href}`);
   }
 
   await page.screenshot({
@@ -100,5 +100,22 @@ async function expectText(page, text, label) {
     });
   } catch {
     throw new Error(`${label}: missing "${text}"`);
+  }
+}
+
+function isWorldMiniAppUrl(href) {
+  if (!href) {
+    return false;
+  }
+
+  try {
+    const url = new URL(href);
+    return (
+      url.origin === "https://world.org" &&
+      url.pathname === "/mini-app" &&
+      url.searchParams.get("app_id")?.startsWith("app_")
+    );
+  } catch {
+    return false;
   }
 }

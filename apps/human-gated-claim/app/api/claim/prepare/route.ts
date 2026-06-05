@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     createMiniKitSendTransactionPayload({
-      chainId: Number(process.env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? 4801),
+      chainId: Number(process.env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? 480),
       transaction
     })
   );

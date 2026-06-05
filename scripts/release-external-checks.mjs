@@ -41,7 +41,7 @@ record("World RP signing key configured", isPrivateKey(rpSigningKey), {
   variable: env.WORLD_RP_SIGNING_KEY ? "WORLD_RP_SIGNING_KEY" : "WORLD_SIGNING_KEY"
 });
 
-const defaultChainId = 4801;
+const defaultChainId = 480;
 const targetChainId = Number(env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? defaultChainId);
 const chainConfig = getWorldChainConfig(targetChainId);
 record("World Chain target is supported", Boolean(chainConfig), {

@@ -2,6 +2,11 @@
 
 import { IDKitRequestWidget, orbLegacy, type IDKitResult } from "@worldcoin/idkit";
 import { MiniKit } from "@worldcoin/minikit-js";
+import {
+  Command,
+  isCommandAvailable,
+  type SendTransactionResult as MiniKitSendTransactionResult
+} from "@worldcoin/minikit-js/commands";
 import { useMiniKit } from "@worldcoin/minikit-js/provider";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
@@ -49,19 +54,19 @@ type PreparedClaimPayload = {
   }>;
 };
 
-type SendTransactionResult = {
-  executedWith: string;
-  data?: {
-    hash?: string;
-    transactionHash?: string;
-    transaction_hash?: string;
-    txHash?: string;
-    userOpHash?: string;
-    status?: string;
-    version?: number;
-    from?: string;
-    timestamp?: string;
-  };
+type MiniKitCommandDiagnostics = {
+  appId: string | null;
+  inWorldApp: boolean;
+  providerInstalled: boolean | null;
+  runtimeInstalled: boolean;
+  walletAuthAvailable: boolean;
+  sendTransactionAvailable: boolean;
+  walletAuthReady: boolean;
+  sendTransactionReady: boolean;
+  userWallet: string | null;
+  worldAppVersion: number | null;
+  deviceOS: string | null;
+  location: string | null;
 };
 
 type UserOperationResponse = {
@@ -107,6 +112,7 @@ export function ClaimExperience() {
   }>({});
   const [message, setMessage] = useState("Ready for one verified human.");
   const [log, setLog] = useState<ApiLog | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const worldAppId = process.env.NEXT_PUBLIC_WORLD_APP_ID as `app_${string}`;
   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION ?? "one-human-one-claim";
@@ -115,9 +121,17 @@ export function ClaimExperience() {
   const chainId = Number(process.env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? 480);
   const worldAppLink =
     worldAppId && worldAppId.startsWith("app_")
-      ? `worldapp://mini-app?app_id=${worldAppId}&path=%2F`
+      ? MiniKit.getMiniAppUrl(worldAppId, "/")
       : null;
-  const isWorldApp = Boolean(isInstalled) || MiniKit.isInWorldApp();
+  const miniKitDiagnostics = isMounted
+    ? getMiniKitDiagnostics(isInstalled)
+    : getInitialMiniKitDiagnostics(isInstalled, worldAppId);
+  const isWorldApp = miniKitDiagnostics.inWorldApp;
+  const miniKitStatus = miniKitDiagnostics.sendTransactionReady
+    ? "Ready"
+    : miniKitDiagnostics.inWorldApp
+      ? "Commands unavailable"
+      : "Browser";
   const claimNullifier = liveProof?.nullifier ?? diagnosticNullifier;
   const claimRecipient = signedWalletAddress ?? diagnosticWalletAddress ?? localAddress;
   const liveWorldIdReady = Boolean(
@@ -144,9 +158,8 @@ export function ClaimExperience() {
   }, []);
 
   useEffect(() => {
-    void isInstalled;
-    void worldAppId;
-  }, [isInstalled, worldAppId]);
+    setIsMounted(true);
+  }, []);
 
   const stages = useMemo(
     () => [
@@ -158,57 +171,92 @@ export function ClaimExperience() {
   );
 
   async function authenticateWallet() {
-    if (!isWorldApp) {
-      setMessage("MiniKit wallet auth is only available inside World App.");
+    const diagnostics = refreshMiniKitDiagnostics(isInstalled, worldAppId);
+    const statement = "Authenticate for one-human-one-claim.";
+
+    if (!diagnostics.walletAuthReady) {
+      setMessage(
+        diagnostics.inWorldApp
+          ? "MiniKit wallet auth is unavailable in this World App session."
+          : "MiniKit wallet auth is only available inside World App."
+      );
       pushLog("Wallet auth", {
         response: {
-          reason: "not_in_world_app",
-          next: "Open this URL as a World Mini App or use the local wallet diagnostic."
+          reason: diagnostics.inWorldApp
+            ? "wallet_auth_unavailable"
+            : "not_in_world_app",
+          diagnostics,
+          next: diagnostics.inWorldApp
+            ? "Reopen the mini app in the latest World App build and tap Wallet auth again."
+            : "Open this URL as a World Mini App or use the local wallet diagnostic."
         }
       });
       return;
     }
 
     setStep("wallet");
-    const nonceResponse = await requestJson<WalletAuthResponse>(
-      "GET /api/wallet-auth/nonce",
-      "/api/wallet-auth/nonce"
-    );
-    if (!nonceResponse.ok) {
-      setMessage("Wallet nonce request failed.");
-      return;
-    }
+    try {
+      const nonceResponse = await requestJson<WalletAuthResponse>(
+        "GET /api/wallet-auth/nonce",
+        "/api/wallet-auth/nonce"
+      );
+      if (!nonceResponse.ok) {
+        setMessage("Wallet nonce request failed.");
+        pushLog("Wallet auth", {
+          request: { diagnostics },
+          response: nonceResponse.data,
+          status: nonceResponse.status
+        });
+        return;
+      }
 
-    const result = await MiniKit.walletAuth({
-      nonce: nonceResponse.data.nonce,
-      statement: "Authenticate for one-human-one-claim."
-    });
-
-    const verifyResponse = await requestJson("POST /api/wallet-auth/verify", "/api/wallet-auth/verify", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(result.data)
-    });
-    pushLog("Wallet auth", {
-      request: {
+      const result = await MiniKit.walletAuth({
         nonce: nonceResponse.data.nonce,
-        statement: "Authenticate for one-human-one-claim."
-      },
-      response: {
-        command: result,
-        verification: verifyResponse.data
-      },
-      status: verifyResponse.status
-    });
-    if (!verifyResponse.ok) {
-      setMessage("Wallet auth verification failed.");
-      return;
-    }
+        statement
+      });
 
-    const signedAddress = extractAddress(result.data) ?? extractAddress(verifyResponse.data);
-    setSignedWalletAddress(signedAddress);
-    setDiagnosticWalletAddress(null);
-    setMessage("Wallet authenticated. Proof is next.");
+      const verifyResponse = await requestJson<Record<string, unknown>>(
+        "POST /api/wallet-auth/verify",
+        "/api/wallet-auth/verify",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(result.data)
+        }
+      );
+      pushLog("Wallet auth", {
+        request: {
+          nonce: nonceResponse.data.nonce,
+          statement,
+          diagnostics
+        },
+        response: {
+          command: result,
+          verification: verifyResponse.data
+        },
+        status: verifyResponse.status
+      });
+      if (!verifyResponse.ok) {
+        setMessage("Wallet auth verification failed.");
+        return;
+      }
+
+      const signedAddress =
+        extractAddress(result.data) ??
+        extractAddress(verifyResponse.data) ??
+        diagnostics.userWallet;
+      setSignedWalletAddress(signedAddress);
+      setDiagnosticWalletAddress(null);
+      setMessage("Wallet authenticated. Proof is next.");
+    } catch (error) {
+      setMessage("Wallet auth verification failed.");
+      pushLog("Wallet auth", {
+        request: { statement, diagnostics },
+        response: {
+          error: serializeError(error)
+        }
+      });
+    }
   }
 
   function useLocalWallet() {
@@ -281,9 +329,12 @@ export function ClaimExperience() {
   }
 
   async function sendClaim() {
+    const diagnostics = refreshMiniKitDiagnostics(isInstalled, worldAppId);
+    const logLabel = diagnostics.inWorldApp ? "Send claim tx" : "Prepare claim tx";
+
     if (!claimNullifier) {
       setMessage("Verify first, then claim.");
-      pushLog(isWorldApp ? "Send claim tx" : "Prepare claim tx", {
+      pushLog(logLabel, {
         response: { error: "missing_nullifier" }
       });
       return;
@@ -303,10 +354,11 @@ export function ClaimExperience() {
     );
     if (!response.ok) {
       setMessage("Claim transaction preparation failed.");
-      pushLog(isWorldApp ? "Send claim tx" : "Prepare claim tx", {
+      pushLog(logLabel, {
         request: {
           nullifierHash: claimNullifier,
-          recipient: claimRecipient
+          recipient: claimRecipient,
+          diagnostics
         },
         response: response.data,
         status: response.status
@@ -316,14 +368,25 @@ export function ClaimExperience() {
     const payload = response.data;
     setStep("prepared");
 
-    if (!isWorldApp) {
-      setMessage("Prepared MiniKit transaction payload. Open in World App to execute.");
-      pushLog("Prepare claim tx", {
+    if (!diagnostics.sendTransactionReady) {
+      setMessage(
+        diagnostics.inWorldApp
+          ? "MiniKit sendTransaction is unavailable in this World App session."
+          : "Prepared MiniKit transaction payload. Open in World App to execute."
+      );
+      pushLog(logLabel, {
         request: {
           nullifierHash: claimNullifier,
-          recipient: claimRecipient
+          recipient: claimRecipient,
+          diagnostics
         },
-        response: payload,
+        response: {
+          reason: diagnostics.inWorldApp
+            ? "send_transaction_unavailable"
+            : "not_in_world_app",
+          payload,
+          diagnostics
+        },
         status: response.status
       });
       return;
@@ -332,57 +395,54 @@ export function ClaimExperience() {
     try {
       const result = (await MiniKit.sendTransaction({
         ...payload
-      })) as SendTransactionResult;
+      })) as { executedWith: string; data: MiniKitSendTransactionResult };
 
-      const capturedHash = result.data?.userOpHash ?? null;
-      const immediateTxHash = extractTransactionHash(result.data);
+      const capturedHash = extractUserOpHash(result.data);
+      const immediateTxHash =
+        extractTransactionHash(result.data) ??
+        (capturedHash && result.executedWith === "wagmi" ? capturedHash : null);
+      let receipt: UserOperationResponse | null = null;
+
+      if (capturedHash && !immediateTxHash) {
+        receipt = await pollUserOperation(capturedHash);
+      }
+
+      const receiptTxHash = receipt?.transaction_hash ?? null;
+      const txHash = immediateTxHash ?? receiptTxHash;
       setClaimEvidence({
-        status: result.data?.status,
-        txHash: immediateTxHash,
+        status: receipt?.status ?? result.data.status,
+        txHash,
         userOpHash: capturedHash
       });
       setStep("submitted");
       setMessage(
-        immediateTxHash
+        txHash
           ? "Claim submitted. Transaction hash captured."
-          : capturedHash
-            ? "Claim submitted. Waiting for transaction hash."
+        : capturedHash
+            ? receipt?.status === "failed"
+              ? "Claim user operation failed."
+              : "Claim submitted. Transaction hash is still pending."
             : `Claim submitted with ${result.executedWith}.`
       );
       pushLog("Send claim tx", {
-        request: payload,
+        request: {
+          payload,
+          diagnostics
+        },
         response: {
           command: result,
-          receipt: null
+          receipt
         }
       });
-
-      if (capturedHash && !immediateTxHash) {
-        const receipt = await pollUserOperation(capturedHash);
-        const txHash = receipt?.transaction_hash ?? null;
-        setClaimEvidence({
-          status: receipt?.status ?? result.data?.status,
-          txHash,
-          userOpHash: capturedHash
-        });
-        setMessage(
-          txHash
-            ? "Claim submitted. Transaction hash captured."
-            : receipt?.status === "failed"
-              ? "Claim user operation failed."
-              : "Claim submitted. Transaction hash is still pending."
-        );
-        pushLog("Send claim tx", {
-          request: payload,
-          response: {
-            command: result,
-            receipt
-          }
-        });
-      }
     } catch (error) {
       pushLog("Send claim tx", {
-        response: serializeError(error)
+        request: {
+          payload,
+          diagnostics
+        },
+        response: {
+          error: serializeError(error)
+        }
       });
       setMessage("MiniKit sendTransaction failed.");
     }
@@ -476,7 +536,7 @@ export function ClaimExperience() {
           <dl>
             <div>
               <dt>MiniKit</dt>
-              <dd>{isWorldApp ? "World App" : "Not in World App"}</dd>
+              <dd>{miniKitStatus}</dd>
             </div>
             <div>
               <dt>IDKit</dt>
@@ -536,7 +596,7 @@ export function ClaimExperience() {
             <button onClick={sendClaim} disabled={!claimNullifier}>
               {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
             </button>
-            {worldAppLink && !isWorldApp ? (
+            {worldAppLink && !miniKitDiagnostics.inWorldApp ? (
               <a className="actionLink" href={worldAppLink}>
                 Open World App
               </a>
@@ -654,6 +714,74 @@ function extractTransactionHash(value: unknown) {
   return match ?? null;
 }
 
+function extractUserOpHash(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const candidate = value.userOpHash;
+  return typeof candidate === "string" && /^0x[0-9a-fA-F]{64}$/.test(candidate)
+    ? candidate
+    : null;
+}
+
+function refreshMiniKitDiagnostics(
+  providerInstalled: boolean | undefined,
+  appId: string | undefined
+) {
+  if (MiniKit.isInWorldApp() && !MiniKit.isInstalled()) {
+    MiniKit.install(appId);
+  }
+
+  return getMiniKitDiagnostics(providerInstalled);
+}
+
+function getInitialMiniKitDiagnostics(
+  providerInstalled: boolean | undefined,
+  appId: string | undefined
+): MiniKitCommandDiagnostics {
+  return {
+    appId: appId ?? null,
+    inWorldApp: false,
+    providerInstalled:
+      typeof providerInstalled === "boolean" ? providerInstalled : null,
+    runtimeInstalled: false,
+    walletAuthAvailable: false,
+    sendTransactionAvailable: false,
+    walletAuthReady: false,
+    sendTransactionReady: false,
+    userWallet: null,
+    worldAppVersion: null,
+    deviceOS: null,
+    location: null
+  };
+}
+
+function getMiniKitDiagnostics(
+  providerInstalled: boolean | undefined
+): MiniKitCommandDiagnostics {
+  const inWorldApp = MiniKit.isInWorldApp();
+  const runtimeInstalled = inWorldApp ? MiniKit.isInstalled() : false;
+  const walletAuthAvailable = isCommandAvailable(Command.WalletAuth);
+  const sendTransactionAvailable = isCommandAvailable(Command.SendTransaction);
+
+  return {
+    appId: MiniKit.appId,
+    inWorldApp,
+    providerInstalled:
+      typeof providerInstalled === "boolean" ? providerInstalled : null,
+    runtimeInstalled,
+    walletAuthAvailable,
+    sendTransactionAvailable,
+    walletAuthReady: inWorldApp && runtimeInstalled && walletAuthAvailable,
+    sendTransactionReady:
+      inWorldApp && runtimeInstalled && sendTransactionAvailable,
+    userWallet: MiniKit.user.walletAddress ?? null,
+    worldAppVersion: MiniKit.deviceProperties.worldAppVersion ?? null,
+    deviceOS: MiniKit.deviceProperties.deviceOS ?? null,
+    location: MiniKit.location ?? null
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -677,10 +805,19 @@ function parseJsonBody(body: BodyInit | null | undefined) {
 
 function serializeError(error: unknown) {
   if (error instanceof Error) {
+    const miniKitError = error as Error & {
+      code?: unknown;
+      details?: unknown;
+      error_code?: unknown;
+      reason?: unknown;
+    };
+
     return {
+      code: miniKitError.code ?? miniKitError.error_code,
+      details: miniKitError.details,
       message: error.message,
       name: error.name,
-      stack: error.stack
+      reason: miniKitError.reason
     };
   }
 
