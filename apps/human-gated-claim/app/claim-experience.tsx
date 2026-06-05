@@ -90,7 +90,7 @@ export function ClaimExperience() {
   const chainId = Number(process.env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? 480);
   const worldAppLink =
     worldAppId && worldAppId.startsWith("app_")
-      ? `https://world.org/mini-app?app_id=${worldAppId}&path=%2F`
+      ? `worldapp://mini-app?app_id=${worldAppId}&path=%2F`
       : null;
   const isWorldApp = Boolean(isInstalled) || MiniKit.isInWorldApp();
   const liveWorldIdReady = Boolean(
