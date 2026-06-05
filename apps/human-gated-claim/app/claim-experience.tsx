@@ -402,7 +402,7 @@ export function ClaimExperience() {
             <button onClick={sendClaim} disabled={!nullifier}>
               {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
             </button>
-            {worldAppLink ? (
+            {worldAppLink && !isWorldApp ? (
               <a className="actionLink" href={worldAppLink}>
                 Open World App
               </a>
