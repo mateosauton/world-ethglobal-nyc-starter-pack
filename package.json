@@ -19,6 +19,7 @@
     "test": "pnpm -r --if-present test",
     "test:ui": "node scripts/ui-ux-smoke.mjs",
     "release:external": "node scripts/release-external-checks.mjs",
+    "release:record-userop": "node scripts/record-world-app-userop.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "contracts:test": "forge test -C contracts",

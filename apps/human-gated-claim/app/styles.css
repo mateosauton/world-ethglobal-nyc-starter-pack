@@ -29,6 +29,20 @@ button {
   padding: 0 16px;
 }
 
+.actionLink {
+  align-items: center;
+  background: #17201d;
+  border: 1px solid #17201d;
+  border-radius: 8px;
+  color: #ffffff;
+  display: flex;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  text-decoration: none;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
@@ -196,6 +210,24 @@ dd {
   padding: 28px;
 }
 
+.evidenceBar {
+  align-items: center;
+  background: #eef7ef;
+  border: 1px solid rgba(23, 32, 29, 0.12);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px;
+}
+
+.evidenceBar code {
+  color: #17201d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 pre {
   background: #101816;
   border-radius: 8px;
@@ -218,5 +250,9 @@ pre {
   .workspace {
     grid-template-columns: 1fr;
     padding: 18px;
+  }
+
+  .evidenceBar {
+    grid-template-columns: 1fr;
   }
 }

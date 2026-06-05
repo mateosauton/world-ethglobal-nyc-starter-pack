@@ -56,6 +56,13 @@ After deployment:
 3. Set `CONTRACT_EXPLORER_URL` to the contract URL on the selected explorer.
 4. Run `pnpm release:external` and confirm the target-chain checks pass.
 5. Run `pnpm dev:claim`.
-6. Verify, prepare claim, and call MiniKit `sendTransaction` from World App.
+6. Open the Mini App with `https://world.org/mini-app?app_id=<app_id>&path=%2F`.
+7. Verify, prepare claim, and call MiniKit `sendTransaction` from World App.
+8. Copy the displayed `userOpHash` and record it:
+
+```bash
+pnpm release:record-userop 0x...
+pnpm release:external
+```
 
 The sample contract stores one claimant per nullifier hash. If you need proof checks enforced on-chain instead of in a backend, extend the contract with World ID on-chain verification before calling `claim`.

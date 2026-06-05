@@ -48,6 +48,17 @@ type PreparedClaimPayload = {
   }>;
 };
 
+type SendTransactionResult = {
+  executedWith: string;
+  data?: {
+    userOpHash?: string;
+    status?: string;
+    version?: number;
+    from?: string;
+    timestamp?: string;
+  };
+};
+
 type ApiLog = {
   id: number;
   label: string;
@@ -68,11 +79,19 @@ export function ClaimExperience() {
   const [step, setStep] = useState<StepState>("idle");
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [nullifier, setNullifier] = useState<string | null>(null);
+  const [userOpHash, setUserOpHash] = useState<string | null>(null);
   const [message, setMessage] = useState("Ready for one verified human.");
   const [logs, setLogs] = useState<ApiLog[]>([]);
 
   const worldAppId = process.env.NEXT_PUBLIC_WORLD_APP_ID as `app_${string}`;
   const action = process.env.NEXT_PUBLIC_WORLD_ID_ACTION ?? "one-human-one-claim";
+  const claimContract = process.env
+    .NEXT_PUBLIC_CLAIM_CONTRACT_ADDRESS as `0x${string}`;
+  const chainId = Number(process.env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? 480);
+  const worldAppLink =
+    worldAppId && worldAppId.startsWith("app_")
+      ? `https://world.org/mini-app?app_id=${worldAppId}&path=%2F`
+      : null;
   const isWorldApp = Boolean(isInstalled) || MiniKit.isInWorldApp();
   const liveWorldIdReady = Boolean(
     rpContext &&
@@ -233,13 +252,34 @@ export function ClaimExperience() {
       return;
     }
 
-    const result = await MiniKit.sendTransaction({
-      ...payload
-    });
-    pushLog("MiniKit.sendTransaction result", { response: result });
+    try {
+      const result = (await MiniKit.sendTransaction({
+        ...payload
+      })) as SendTransactionResult;
+      pushLog("MiniKit.sendTransaction result", { response: result });
 
-    setStep("submitted");
-    setMessage(`Claim submitted with ${result.executedWith}.`);
+      const capturedHash = result.data?.userOpHash ?? null;
+      setUserOpHash(capturedHash);
+      setStep("submitted");
+      setMessage(
+        capturedHash
+          ? "Claim submitted. UserOp hash captured."
+          : `Claim submitted with ${result.executedWith}.`
+      );
+    } catch (error) {
+      pushLog("MiniKit.sendTransaction error", {
+        response: serializeError(error)
+      });
+      setMessage("MiniKit sendTransaction failed.");
+    }
+  }
+
+  async function copyUserOpHash() {
+    if (!userOpHash) {
+      return;
+    }
+    await navigator.clipboard.writeText(userOpHash);
+    pushLog("UserOp hash copied", { response: { userOpHash } });
   }
 
   async function requestJson<T>(
@@ -325,6 +365,18 @@ export function ClaimExperience() {
               <dt>Nullifier</dt>
               <dd>{nullifier ? shortAddress(nullifier) : "Not verified"}</dd>
             </div>
+            <div>
+              <dt>Chain</dt>
+              <dd>{Number.isFinite(chainId) ? chainId : "Unset"}</dd>
+            </div>
+            <div>
+              <dt>Contract</dt>
+              <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
+            </div>
+            <div>
+              <dt>UserOp</dt>
+              <dd>{userOpHash ? shortAddress(userOpHash) : "Not submitted"}</dd>
+            </div>
           </dl>
         </div>
 
@@ -350,6 +402,11 @@ export function ClaimExperience() {
             <button onClick={sendClaim} disabled={!nullifier}>
               {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
             </button>
+            {worldAppLink ? (
+              <a className="actionLink" href={worldAppLink}>
+                Open World App
+              </a>
+            ) : null}
           </div>
         </div>
       </section>
@@ -359,6 +416,12 @@ export function ClaimExperience() {
           <p className="eyebrow">Server console</p>
           <h2>Logs and responses</h2>
         </div>
+        {userOpHash ? (
+          <div className="evidenceBar">
+            <code>{userOpHash}</code>
+            <button onClick={copyUserOpHash}>Copy hash</button>
+          </div>
+        ) : null}
         <pre>{logs.length ? JSON.stringify(logs, null, 2) : "No requests yet."}</pre>
       </section>
 
@@ -394,4 +457,16 @@ function parseJsonBody(body: BodyInit | null | undefined) {
   } catch {
     return body;
   }
+}
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    };
+  }
+
+  return error;
 }

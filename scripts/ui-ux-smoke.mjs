@@ -119,6 +119,11 @@ async function runClaimFlow(browser) {
       "Prepared MiniKit transaction payload. Open in World App to execute.",
       "claim flow"
     );
+    await expectVisibleText(
+      page,
+      "0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe",
+      "claim contract target"
+    );
     await page.screenshot({
       path: path.join(outputDir, "claim-flow-mobile.png"),
       fullPage: true

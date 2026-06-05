@@ -6,7 +6,7 @@ Last audit: 2026-06-05.
 
 Release status: not publish-ready until the unchecked live World App proof and `sendTransaction` gates are completed.
 
-Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, the claim app preview was redeployed with chain ID `480`, and Developer Portal MCP accepted the Mini App integration URL plus contract allowlist update. `pnpm release:external` now fails only `World App sendTransaction user operation captured`.
+Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain mainnet RPC are reachable. Signed RP context generation works for the claim app and the HITL approval desk. `HumanGatedClaim` is deployed on World Chain mainnet, `.env.local` points at the deployed contract, the claim app preview was redeployed with chain ID `480`, and Developer Portal MCP accepted the Mini App integration URL plus contract allowlist update. The claim UI now displays and copies the `MiniKit.sendTransaction` user operation hash after submission. `pnpm release:external` now fails only `World App sendTransaction user operation captured`.
 
 External gate command: run `pnpm release:external` after filling `.env.local` with the real World app, RP, deployer, portal, allowlist, user operation, and explorer evidence. The command writes `output/release-external-checks.json` and exits non-zero until the selected chain and World App evidence are satisfied.
 
@@ -25,7 +25,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] `pnpm test:ui` passes with apps running on ports 3000, 3001, 3002, and 3003.
   Evidence: `output/ui-ux/summary.json` reports no failures across desktop, mobile, local flows, and duplicate-nullifier API check.
 - [x] Vercel preview deployments build from the monorepo root.
-  Evidence: previews are ready for claim (`https://human-gated-claim-f8yxx63rv-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-5e14d2ln6-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-h3gbisupl-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-e0yw7idd6-mateo-sautons-projects.vercel.app`).
+  Evidence: previews are ready for claim (`https://human-gated-claim-78t38ph5w-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-5e14d2ln6-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-h3gbisupl-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-e0yw7idd6-mateo-sautons-projects.vercel.app`).
 - [x] No real secrets are committed.
   Evidence: tracked env files are limited to `.env.example`; scan found no provided portal key or real app ID.
 - [x] `.env.example` has placeholders only.
@@ -46,7 +46,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Browser claim path prepares payload without claiming execution.
   Evidence: `pnpm test:ui` verified `Prepared MiniKit transaction payload. Open in World App to execute.`
 - [ ] World App claim path executes MiniKit `sendTransaction`.
-  Blocked: requires opening the deployed Mini App inside World App with a live wallet and capturing the returned user operation hash. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
+  Blocked: requires opening the deployed Mini App inside World App with a live wallet and capturing the returned user operation hash. The claim app is deployed with chain ID `480` and contract `0x146Cb926cd55C97bFfe9C1cbD5C6e449d3DAf6fe`; the UI displays and copies `result.data.userOpHash` after `MiniKit.sendTransaction`, and `pnpm release:record-userop 0x...` records it in `.env.local`. `pnpm release:external` currently fails only `World App sendTransaction user operation captured`.
 
 ## Contracts
 
