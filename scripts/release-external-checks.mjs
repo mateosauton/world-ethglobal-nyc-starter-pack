@@ -5,6 +5,19 @@ import path from "node:path";
 
 const execFileAsync = promisify(execFile);
 const outputPath = path.resolve("output/release-external-checks.json");
+const WORLD_CHAIN_CONFIGS = {
+  480: {
+    name: "World Chain Mainnet",
+    defaultRpcUrl: "https://worldchain-mainnet.g.alchemy.com/public",
+    explorerBaseUrl: "https://worldscan.org"
+  },
+  4801: {
+    name: "World Chain Sepolia",
+    defaultRpcUrl: "https://worldchain-sepolia.g.alchemy.com/public",
+    explorerBaseUrl: "https://sepolia.worldscan.org"
+  }
+};
+
 const envFile = await readEnvFile(".env.local");
 const env = { ...envFile.values, ...process.env };
 const results = [];
@@ -28,11 +41,23 @@ record("World RP signing key configured", isPrivateKey(rpSigningKey), {
   variable: env.WORLD_RP_SIGNING_KEY ? "WORLD_RP_SIGNING_KEY" : "WORLD_SIGNING_KEY"
 });
 
-const rpcUrl = env.WORLD_CHAIN_RPC_URL ?? "https://worldchain-sepolia.g.alchemy.com/public";
+const defaultChainId = 4801;
+const targetChainId = Number(env.NEXT_PUBLIC_WORLD_CHAIN_ID ?? defaultChainId);
+const chainConfig = getWorldChainConfig(targetChainId);
+record("World Chain target is supported", Boolean(chainConfig), {
+  actual: targetChainId,
+  supported: Object.keys(WORLD_CHAIN_CONFIGS).map(Number)
+});
+
+const rpcUrl =
+  env.WORLD_CHAIN_RPC_URL ??
+  chainConfig?.defaultRpcUrl ??
+  WORLD_CHAIN_CONFIGS[defaultChainId].defaultRpcUrl;
 const chainId = await getChainId(rpcUrl);
-record("World Chain Sepolia RPC reachable", chainId === 4801, {
+record("World Chain RPC reachable", Boolean(chainConfig) && chainId === targetChainId, {
   actual: chainId,
-  expected: 4801,
+  expected: targetChainId,
+  network: chainConfig?.name ?? "unknown",
   rpcUrl: redactUrl(rpcUrl)
 });
 
@@ -44,9 +69,10 @@ record("World Chain deployer private key configured", privateKeyOk, {
 
 const deployerAddress = privateKeyOk ? await getAddress(privateKey) : null;
 const deployerBalance = deployerAddress ? await getBalance(rpcUrl, deployerAddress) : null;
-record("World Chain deployer has Sepolia ETH", Boolean(deployerBalance && deployerBalance > 0n), {
+record("World Chain deployer has ETH on target chain", Boolean(deployerBalance && deployerBalance > 0n), {
   address: deployerAddress,
-  balanceWei: deployerBalance?.toString()
+  balanceWei: deployerBalance?.toString(),
+  network: chainConfig?.name ?? "unknown"
 });
 
 const contractAddress = env.NEXT_PUBLIC_CLAIM_CONTRACT_ADDRESS;
@@ -58,8 +84,9 @@ record("Claim contract address configured", contractAddressOk, {
 });
 
 const contractCode = contractAddressOk ? await getCode(rpcUrl, contractAddress) : null;
-record("Claim contract is deployed on World Chain Sepolia", Boolean(contractCode && contractCode !== "0x"), {
-  address: contractAddress
+record("Claim contract is deployed on target chain", Boolean(contractCode && contractCode !== "0x"), {
+  address: contractAddress,
+  network: chainConfig?.name ?? "unknown"
 });
 
 const portalKey = env.WORLD_DEVELOPER_API_KEY;
@@ -78,8 +105,9 @@ record("World App sendTransaction user operation captured", /^0x[0-9a-fA-F]{64}$
 });
 
 const explorerUrl = env.CONTRACT_EXPLORER_URL;
-record("World Chain explorer link captured", isConfigured(explorerUrl) && /^https:\/\//.test(explorerUrl), {
-  variable: "CONTRACT_EXPLORER_URL"
+record("World Chain explorer link captured", explorerUrlMatchesTarget(explorerUrl, chainConfig), {
+  variable: "CONTRACT_EXPLORER_URL",
+  expectedBaseUrl: chainConfig?.explorerBaseUrl
 });
 
 const summary = {
@@ -135,6 +163,24 @@ function isPrivateKey(value) {
 
 function isAddress(value) {
   return /^0x[0-9a-fA-F]{40}$/.test(value ?? "");
+}
+
+function getWorldChainConfig(chainIdValue) {
+  return WORLD_CHAIN_CONFIGS[chainIdValue] ?? null;
+}
+
+function explorerUrlMatchesTarget(value, config) {
+  if (!config || !isConfigured(value)) {
+    return false;
+  }
+
+  try {
+    const actual = new URL(value);
+    const expected = new URL(config.explorerBaseUrl);
+    return actual.protocol === "https:" && actual.hostname === expected.hostname;
+  } catch {
+    return false;
+  }
 }
 
 async function getAddress(privateKeyValue) {
