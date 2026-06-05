@@ -26,7 +26,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
+    "next": "^16.2.7",
     "playwright": "^1.57.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }

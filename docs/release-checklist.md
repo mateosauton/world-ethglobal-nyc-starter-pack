@@ -2,11 +2,11 @@
 
 Run this before publishing the starter pack.
 
-Last audit: 2026-06-04.
+Last audit: 2026-06-05.
 
-Release status: not publish-ready until the unchecked external World App, World Chain, and Developer Portal gates are completed.
+Release status: not publish-ready until the unchecked live World App and World Chain gates are completed.
 
-Continuation audit: local apps and World Chain Sepolia RPC are reachable, but no usable portal/deployer credentials are available in this runtime. The configured Developer Portal MCP key has a `0x` prefix; the official Developer Portal MCP docs state portal API keys start with `api_`, and a direct MCP `listTools` attempt returned `MCP error -32001: API key is required.`
+Continuation audit: local apps, Vercel preview deployments, Developer Portal app/RP/signing configuration, and World Chain Sepolia RPC are reachable. Signed RP context generation now works for the claim app and the HITL approval desk. `pnpm release:external` still fails the on-chain release gates: the configured deployer has `0` wei on World Chain Sepolia, the claim contract address is still the dummy value, no portal allowlist confirmation has been recorded, no MiniKit `sendTransaction` user operation hash has been captured, and no explorer link is available.
 
 External gate command: run `pnpm release:external` after filling `.env.local` with the real World app, RP, deployer, portal, allowlist, user operation, and explorer evidence. The command writes `output/release-external-checks.json` and exits non-zero until those release gates are satisfied.
 
@@ -24,6 +24,8 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
   Evidence: `forge build -C contracts` completed.
 - [x] `pnpm test:ui` passes with apps running on ports 3000, 3001, 3002, and 3003.
   Evidence: `output/ui-ux/summary.json` reports no failures across desktop, mobile, local flows, and duplicate-nullifier API check.
+- [x] Vercel preview deployments build from the monorepo root.
+  Evidence: previews are ready for claim (`https://human-gated-claim-1euasleym-mateo-sautons-projects.vercel.app`), agent (`https://human-agent-console-5e14d2ln6-mateo-sautons-projects.vercel.app`), HITL (`https://human-approval-desk-h3gbisupl-mateo-sautons-projects.vercel.app`), and bench (`https://ui-test-bench-e0yw7idd6-mateo-sautons-projects.vercel.app`).
 - [x] No real secrets are committed.
   Evidence: tracked env files are limited to `.env.example`; scan found no provided portal key or real app ID.
 - [x] `.env.example` has placeholders only.
@@ -34,7 +36,7 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] `pnpm dev:claim` starts.
   Evidence: `http://localhost:3000` returned 200 from the detached `world-claim` screen session.
 - [ ] Live World ID verify is tested with a signed RP context.
-  Blocked: current local context returned `configured:false`, `mode:missing-signing-key`, `rp_id:rp_local_dev`, and `hasSigningKey:false`. Requires a real World app, RP ID, signing key, and a live IDKit proof. `pnpm release:external` currently fails `World app id configured`, `World RP id configured`, and `World RP signing key configured`.
+  Blocked: signed context generation works (`GET /api/world-id/context` returns `configured:true`, `mode:signed`, and the expected RP ID), but a live IDKit proof has not been completed inside World App. `pnpm release:external` now passes the app ID, RP ID, and signing key gates.
 - [x] Local proof is visibly labeled as diagnostics.
   Evidence: `pnpm test:ui` verified the claim flow text `Local proof accepted for diagnostics only.`
 - [x] Wallet auth nonce endpoint works.
@@ -44,16 +46,16 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
 - [x] Browser claim path prepares payload without claiming execution.
   Evidence: `pnpm test:ui` verified `Prepared MiniKit transaction payload. Open in World App to execute.`
 - [ ] World App claim path executes MiniKit `sendTransaction`.
-  Blocked: requires opening the Mini App inside World App with a live wallet and allowlisted contract. Browser evidence only proves payload preparation. World docs confirm MiniKit commands must be tested inside World App and contract interactions must be allowlisted in Developer Portal. `pnpm release:external` currently fails `World App sendTransaction user operation captured`.
+  Blocked: requires opening the deployed Mini App inside World App with a live wallet and an allowlisted claim contract. Browser evidence only proves payload preparation. `pnpm release:external` currently fails `World App sendTransaction user operation captured`.
 
 ## Contracts
 
 - [ ] World Chain Sepolia deployment works.
-  Blocked: `.env.local` is missing, so no deployer key or target deployment config is available. `forge build` and tests pass locally, and `pnpm release:external` confirms the public Sepolia RPC returns chain ID `4801` while failing deployer key and balance checks.
+  Blocked: deployer configuration is present and the Sepolia RPC returns chain ID `4801`, but `pnpm release:external` reports the configured deployer has `0` wei on World Chain Sepolia.
 - [ ] Contract address is added to `.env.local`.
-  Blocked: `.env.local` is missing; `pnpm release:external` currently fails `Claim contract address configured`.
+  Blocked: `.env.local` still contains the dummy `NEXT_PUBLIC_CLAIM_CONTRACT_ADDRESS`; `pnpm release:external` fails `Claim contract address configured` and deployed-code checks.
 - [ ] Contract function is allowlisted in the World Developer Portal.
-  Blocked: no deployed contract address was available to allowlist. Developer Portal MCP is configured but the available key is not a usable `api_` portal key, so portal permissions could not be inspected or changed from this session. `pnpm release:external` currently fails `Developer Portal API key configured` and `Developer Portal contract allowlist confirmed`.
+  Blocked: Developer Portal API access is configured, but no deployed contract address is available to allowlist. `pnpm release:external` currently fails `Developer Portal contract allowlist confirmed`.
 - [ ] Explorer link is captured for submissions.
   Blocked: no World Chain Sepolia deployment was performed in this audit; `pnpm release:external` currently fails `World Chain explorer link captured`.
 
@@ -78,8 +80,8 @@ External gate command: run `pnpm release:external` after filling `.env.local` wi
   Evidence: `http://localhost:3003` returned 200 from the detached `world-hitl` screen session.
 - [x] Approval proposal returns `tool-approveAction` and `data-approval-context` parts.
   Evidence: `POST /api/hitl/propose` returned both part types.
-- [x] Live World ID approval is disabled when portal credentials are missing.
-  Evidence: `POST /api/hitl/propose` returned `configured:false` and `local-diagnostic-context`.
+- [x] Live World ID approval signs RP context when portal credentials are present.
+  Evidence: `POST /api/hitl/propose` returned `configured:true`, `mode:signed-context`, the expected RP ID, and `tool-approveAction` plus `data-approval-context` parts.
 - [x] Local diagnostic approval and resume flow work.
   Evidence: `pnpm test:ui` verified HITL request, local diagnostic approval, and resume.
 - [x] Server console shows request and response payloads.

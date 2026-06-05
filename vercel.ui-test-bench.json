@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "pnpm --filter @world-starter/ui-test-bench build",
+  "outputDirectory": "apps/ui-test-bench/.next"
+}

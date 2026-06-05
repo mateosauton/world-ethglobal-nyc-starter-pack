@@ -11,6 +11,7 @@ coverage
 *.tsbuildinfo
 .playwright-cli
 .playwright-mcp
+.vercel
 output
 
 # Foundry
