@@ -40,6 +40,13 @@ type ApprovalResponse = {
   note?: string;
 };
 
+type ApiResult<T> = {
+  data: T;
+  error?: string;
+  ok: boolean;
+  status: number;
+};
+
 const proposals: ProposalDraft[] = [
   {
     amountUsd: 2500,
@@ -80,6 +87,7 @@ export function ApprovalDesk() {
   const [message, setMessage] = useState("Agent action is waiting for review.");
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [open, setOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const activeMessage = (approval?.message ?? emptyMessage) as unknown as UIMessage;
   const activePart = (approval?.toolPart ?? emptyPart) as unknown as UIMessagePart<
@@ -117,29 +125,34 @@ export function ApprovalDesk() {
   );
 
   async function requestApproval() {
+    setPendingAction("request-approval");
     setMessage("Requesting human approval context.");
-    const response = await requestJson<ProposeResponse>(
-      "POST /api/hitl/propose",
-      "/api/hitl/propose",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(draft)
+    try {
+      const response = await requestJson<ProposeResponse>(
+        "POST /api/hitl/propose",
+        "/api/hitl/propose",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(draft)
+        }
+      );
+
+      if (!response.ok) {
+        setMessage(`Approval request failed: ${requestErrorLabel(response)}.`);
+        return;
       }
-    );
 
-    if (!response.ok) {
-      setMessage("Approval request failed.");
-      return;
+      setApproval(response.data.approval);
+      setDiagnostics(response.data.diagnostics);
+      setMessage(
+        response.data.diagnostics.configured
+          ? "Signed proof request is ready."
+          : "Live World ID approval needs portal credentials."
+      );
+    } finally {
+      setPendingAction(null);
     }
-
-    setApproval(response.data.approval);
-    setDiagnostics(response.data.diagnostics);
-    setMessage(
-      response.data.diagnostics.configured
-        ? "Signed proof request is ready."
-        : "Live World ID approval needs portal credentials."
-    );
   }
 
   async function approveLocally() {
@@ -147,52 +160,73 @@ export function ApprovalDesk() {
       return;
     }
 
-    const response = await requestJson<ApprovalResponse>(
-      "POST /api/hitl/local-approve",
-      "/api/hitl/local-approve",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: approval.id })
-      }
-    );
+    setPendingAction("local-approve");
+    setMessage("Recording local diagnostic approval.");
+    try {
+      const response = await requestJson<ApprovalResponse>(
+        "POST /api/hitl/local-approve",
+        "/api/hitl/local-approve",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id: approval.id })
+        }
+      );
 
-    if (response.data.approval) {
-      setApproval(response.data.approval);
+      if (response.data.approval) {
+        setApproval(response.data.approval);
+      }
+      setMessage(
+        response.ok
+          ? "Local diagnostic approval recorded."
+          : response.data.error ?? requestErrorLabel(response)
+      );
+    } finally {
+      setPendingAction(null);
     }
-    setMessage(
-      response.ok
-        ? "Local diagnostic approval recorded."
-        : response.data.error ?? "Local approval failed."
-    );
   }
 
   async function handleWorldProof(result: IDKitResult) {
     if (!approvalState.webhookUrl) {
-      throw new Error("Human approval webhook is not ready.");
+      const message = "Human approval webhook is not ready.";
+      pushLog("POST HITL verification webhook", {
+        request: { body: result, method: "POST", url: "not-ready" },
+        response: { error: message },
+        status: 0
+      });
+      setMessage(message);
+      throw new Error(message);
     }
 
-    const response = await requestJson<ApprovalResponse>(
-      "POST HITL verification webhook",
-      approvalState.webhookUrl,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(result)
+    setPendingAction("world-proof");
+    setMessage("Verifying World ID proof.");
+    try {
+      const response = await requestJson<ApprovalResponse>(
+        "POST HITL verification webhook",
+        approvalState.webhookUrl,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(result)
+        }
+      );
+
+      if (response.data.approval) {
+        setApproval(response.data.approval);
       }
-    );
+      if (response.data.diagnostics) {
+        setDiagnostics(response.data.diagnostics);
+      }
+      if (!response.ok) {
+        const message = response.data.error ?? requestErrorLabel(response);
+        setMessage(`World ID proof failed: ${message}.`);
+        throw new Error(message);
+      }
 
-    if (response.data.approval) {
-      setApproval(response.data.approval);
+      setMessage("World ID proof accepted. Agent can resume.");
+    } finally {
+      setPendingAction(null);
     }
-    if (response.data.diagnostics) {
-      setDiagnostics(response.data.diagnostics);
-    }
-    if (!response.ok) {
-      throw new Error(response.data.error ?? "World ID proof verification failed.");
-    }
-
-    setMessage("World ID proof accepted. Agent can resume.");
   }
 
   async function resumeAgent() {
@@ -200,42 +234,60 @@ export function ApprovalDesk() {
       return;
     }
 
-    const response = await requestJson<ApprovalResponse>(
-      "POST /api/hitl/resume",
-      "/api/hitl/resume",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: approval.id })
-      }
-    );
+    setPendingAction("resume");
+    setMessage("Resuming agent action.");
+    try {
+      const response = await requestJson<ApprovalResponse>(
+        "POST /api/hitl/resume",
+        "/api/hitl/resume",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id: approval.id })
+        }
+      );
 
-    setMessage(
-      response.ok
-        ? "Agent action resumed after human approval."
-        : response.data.error ?? "Agent action is blocked."
-    );
+      setMessage(
+        response.ok
+          ? "Agent action resumed after human approval."
+          : response.data.error ?? requestErrorLabel(response)
+      );
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function requestJson<T>(
     label: string,
     input: RequestInfo | URL,
     init?: RequestInit
-  ): Promise<{ data: T; ok: boolean; status: number }> {
-    const requestBody = parseJsonBody(init?.body);
-    const response = await fetch(input, init);
-    const text = await response.text();
-    const data = text ? (JSON.parse(text) as T) : ({} as T);
-    pushLog(label, {
-      request: {
-        body: requestBody,
-        method: init?.method ?? "GET",
-        url: typeof input === "string" ? input : input.toString()
-      },
-      response: data,
-      status: response.status
-    });
-    return { data, ok: response.ok, status: response.status };
+  ): Promise<ApiResult<T>> {
+    const request = {
+      body: parseJsonBody(init?.body),
+      method: init?.method ?? "GET",
+      url: typeof input === "string" ? input : input.toString()
+    };
+
+    try {
+      const response = await fetch(input, init);
+      const text = await response.text();
+      const data = parseResponseBody<T>(text);
+      pushLog(label, {
+        request,
+        response: data,
+        status: response.status
+      });
+      return { data, ok: response.ok, status: response.status };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Request failed.";
+      const data = { error: message } as T;
+      pushLog(label, {
+        request,
+        response: data,
+        status: 0
+      });
+      return { data, error: message, ok: false, status: 0 };
+    }
   }
 
   function pushLog(label: string, entry: Omit<ApiLog, "id" | "label" | "time">) {
@@ -257,6 +309,7 @@ export function ApprovalDesk() {
     setApproval(null);
     setDiagnostics(null);
     setMessage("Agent action is waiting for review.");
+    setPendingAction(null);
   }
 
   return (
@@ -371,26 +424,30 @@ export function ApprovalDesk() {
           </div>
 
           <div className="actionRow">
-            <button onClick={requestApproval} type="button">
+            <button
+              disabled={Boolean(pendingAction)}
+              onClick={requestApproval}
+              type="button"
+            >
               Request human approval
             </button>
             <button
               className="primary"
-              disabled={!liveWorldIdReady}
+              disabled={Boolean(pendingAction) || !liveWorldIdReady}
               onClick={() => setOpen(true)}
               type="button"
             >
               Verify with World ID
             </button>
             <button
-              disabled={!approval || approval.status !== "pending"}
+              disabled={Boolean(pendingAction) || !approval || approval.status !== "pending"}
               onClick={approveLocally}
               type="button"
             >
               Use local diagnostic approval
             </button>
             <button
-              disabled={!approval || approval.status !== "verified"}
+              disabled={Boolean(pendingAction) || !approval || approval.status !== "verified"}
               onClick={resumeAgent}
               type="button"
             >
@@ -445,7 +502,13 @@ export function ApprovalDesk() {
           preset={orbLegacy({ signal: approval?.proposalId ?? draft.proposalId })}
           handleVerify={handleWorldProof}
           onSuccess={() => setOpen(false)}
-          onError={(errorCode) => setMessage(`World ID error: ${errorCode}`)}
+          onError={(errorCode) => {
+            pushLog("IDKit error", {
+              response: { error: errorCode },
+              status: 0
+            });
+            setMessage(`World ID error: ${errorCode}`);
+          }}
         />
       ) : null}
     </main>
@@ -461,6 +524,37 @@ function parseJsonBody(body: BodyInit | null | undefined) {
   } catch {
     return body;
   }
+}
+
+function parseResponseBody<T>(text: string) {
+  if (!text) {
+    return {} as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return {
+      body: text.slice(0, 2000),
+      error: "Server returned a non-JSON response."
+    } as T;
+  }
+}
+
+function requestErrorLabel<T>(response: ApiResult<T>) {
+  if (response.error) {
+    return response.error;
+  }
+  if (isRecord(response.data) && typeof response.data.error === "string") {
+    return response.data.error;
+  }
+  if (isRecord(response.data) && typeof response.data.message === "string") {
+    return response.data.message;
+  }
+  return response.status ? `HTTP ${response.status}` : "network error";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function formatUsd(amount: number) {
