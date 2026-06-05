@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     onEvent: (event) => clientEvents.push(event),
     signer: {
       address: account.address,
-      chainId: process.env.AGENTKIT_NETWORK ?? "eip155:4801",
+      chainId: process.env.AGENTKIT_NETWORK ?? "eip155:480",
       signMessage(message) {
         return account.signMessage({ message });
       },

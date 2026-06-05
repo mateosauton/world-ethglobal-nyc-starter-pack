@@ -100,7 +100,7 @@ Required for the AgentKit demo:
 
 ```bash
 AGENTKIT_RESOURCE_URL=http://localhost:3001/api/protected-resource
-AGENTKIT_NETWORK=eip155:4801
+AGENTKIT_NETWORK=eip155:480
 AGENTKIT_MODE=free
 AGENTBOOK_VERIFIER=local-allowlist
 AGENTBOOK_REGISTERED_AGENTS=0x...

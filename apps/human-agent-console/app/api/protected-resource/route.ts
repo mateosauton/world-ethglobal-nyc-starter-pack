@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const resourceUrl = request.url;
   const resourcePath = request.nextUrl.pathname;
   const mode = getAgentkitMode();
-  const network = process.env.AGENTKIT_NETWORK ?? "eip155:4801";
+  const network = process.env.AGENTKIT_NETWORK ?? "eip155:480";
   const verifierMode = process.env.AGENTBOOK_VERIFIER === "live" ? "live" : "local-allowlist";
 
   serverConsole.push({

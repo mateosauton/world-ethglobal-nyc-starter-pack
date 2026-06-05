@@ -24,7 +24,7 @@ async function agentkitRequest(label: string, key: `0x${string}`) {
     onEvent: (event) => events.push(event),
     signer: {
       address: account.address,
-      chainId: process.env.AGENTKIT_NETWORK ?? "eip155:4801",
+      chainId: process.env.AGENTKIT_NETWORK ?? "eip155:480",
       signMessage(message) {
         return account.signMessage({ message });
       },
