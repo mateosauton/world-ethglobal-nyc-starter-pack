@@ -145,7 +145,7 @@ h1 {
 
 .segmented button {
   background: transparent;
-  color: var(--muted);
+  color: #475569;
 }
 
 .segmented button.selected {

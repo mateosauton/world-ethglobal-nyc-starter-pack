@@ -289,7 +289,7 @@ select:focus,
 textarea:focus,
 button:focus-visible,
 .proposalOption:focus-visible {
-  outline: 2px solid #99f6e4;
+  outline: 2px solid #0f766e;
   outline-offset: 2px;
 }
 
