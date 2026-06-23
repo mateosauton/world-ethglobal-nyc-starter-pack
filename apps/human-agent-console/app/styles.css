@@ -1,6 +1,18 @@
 :root {
-  background: #eef2ef;
-  color: #111816;
+  --background: #f8fafc;
+  --foreground: #111827;
+  --card: #ffffff;
+  --muted: #64748b;
+  --muted-surface: #f1f5f9;
+  --border: #d7dce2;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --accent: #2563eb;
+  --console: #0f172a;
+  --console-text: #dbeafe;
+  --radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
   font-family:
     ui-sans-serif,
     -apple-system,
@@ -18,20 +30,29 @@ body {
 }
 
 button {
-  min-height: 44px;
-  border: 1px solid rgba(17, 24, 22, 0.18);
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111816;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
   cursor: pointer;
+  display: inline-flex;
   font: inherit;
-  font-weight: 800;
-  padding: 0 16px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+button:hover:not(:disabled) {
+  border-color: #94a3b8;
 }
 
 button.primary {
-  background: #22c55e;
-  border-color: #22c55e;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 button:disabled {
@@ -40,123 +61,131 @@ button:disabled {
 }
 
 .hero {
-  min-height: 60vh;
-  overflow: hidden;
-  position: relative;
+  border-bottom: 1px solid var(--border);
   display: grid;
-  align-items: end;
+  min-height: 300px;
+  overflow: hidden;
   padding: 32px;
+  place-items: end start;
+  position: relative;
 }
 
 .heroImage {
+  filter: grayscale(1);
   object-fit: cover;
+  opacity: 0.14;
 }
 
 .heroShade {
-  position: absolute;
+  background: linear-gradient(90deg, rgba(248, 250, 252, 0.98), rgba(248, 250, 252, 0.72));
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(238, 242, 239, 0.1), rgba(238, 242, 239, 0.94)),
-    linear-gradient(90deg, rgba(238, 242, 239, 0.92), rgba(238, 242, 239, 0.12));
+  position: absolute;
 }
 
 .heroText {
+  max-width: 680px;
   position: relative;
   z-index: 1;
-  width: min(760px, 100%);
 }
 
 .eyebrow {
-  color: #047857;
-  font-weight: 900;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
   letter-spacing: 0;
   margin: 0 0 10px;
   text-transform: uppercase;
 }
 
 h1 {
-  font-size: clamp(50px, 9vw, 108px);
+  font-size: clamp(2.8rem, 8vw, 4.8rem);
   letter-spacing: 0;
-  line-height: 0.9;
+  line-height: 0.95;
   margin: 0;
 }
 
 .heroText p:not(.eyebrow) {
-  color: #33413d;
-  font-size: 20px;
-  line-height: 1.5;
-  max-width: 620px;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.55;
+  margin: 18px 0 0;
+  max-width: 580px;
 }
 
 .consoleGrid {
   display: grid;
-  gap: 24px;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
   margin: 0 auto;
-  max-width: 1180px;
-  padding: 28px;
+  max-width: 1120px;
+  padding: 24px;
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(17, 24, 22, 0.12);
-  border-radius: 8px;
-  box-shadow: 0 22px 70px rgba(17, 24, 22, 0.09);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 22px;
 }
 
 h2 {
-  font-size: clamp(28px, 4vw, 46px);
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
   letter-spacing: 0;
-  line-height: 1;
-  margin: 0 0 22px;
+  line-height: 1.05;
+  margin: 0 0 20px;
 }
 
 .buttonRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 9px;
 }
 
 pre {
-  background: #101816;
-  border-radius: 8px;
-  color: #d9f99d;
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 22px 0 0;
+  background: var(--console);
+  border-radius: var(--radius);
+  color: var(--console-text);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 20px 0 0;
   min-height: 220px;
   overflow: auto;
-  padding: 18px;
+  padding: 16px;
   white-space: pre-wrap;
 }
 
 .approvalPanel {
+  align-content: start;
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .approvalImage {
-  aspect-ratio: 1;
-  border-radius: 8px;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   height: auto;
   object-fit: cover;
   width: 100%;
 }
 
 .serverPanel {
-  margin: 0 auto 32px;
-  max-width: 1180px;
+  margin: 0 auto 28px;
+  max-width: 1120px;
 }
 
 @media (max-width: 860px) {
   .hero {
-    min-height: 54vh;
+    min-height: 260px;
     padding: 22px;
   }
 
   .consoleGrid {
     grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .panel {
     padding: 18px;
   }
 }
