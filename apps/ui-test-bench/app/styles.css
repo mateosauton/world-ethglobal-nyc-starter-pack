@@ -46,6 +46,12 @@ button {
   padding: 0 14px;
 }
 
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
 main {
   min-height: 100vh;
 }
@@ -108,10 +114,14 @@ h1 {
 
 .statusStack span,
 .commandBox small {
-  color: var(--muted);
+  color: #475569;
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.commandBox small {
+  color: #cbd5e1;
 }
 
 .controls {

@@ -56,6 +56,12 @@ button:hover:not(:disabled),
   border-color: #94a3b8;
 }
 
+button:focus-visible,
+.actionLink:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
@@ -283,7 +289,7 @@ dd {
 }
 
 .evidenceBar span {
-  color: var(--muted);
+  color: #475569;
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;

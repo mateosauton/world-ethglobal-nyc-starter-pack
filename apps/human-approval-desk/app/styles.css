@@ -8,9 +8,9 @@
   --primary: #0f766e;
   --primary-foreground: #ffffff;
   --accent: #2563eb;
-  --warning: #d97706;
+  --warning: #b45309;
   --danger: #dc2626;
-  --success: #16a34a;
+  --success: #15803d;
   --console: #0f172a;
   --console-text: #dbeafe;
   --radius: 8px;
@@ -243,7 +243,7 @@ h2 {
 .statusGrid span,
 label span,
 .approvalDetails dt {
-  color: var(--muted);
+  color: #475569;
   display: block;
   font-size: 0.78rem;
   font-weight: 800;
