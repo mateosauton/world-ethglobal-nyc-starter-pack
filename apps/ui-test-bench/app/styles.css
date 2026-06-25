@@ -148,6 +148,12 @@ h1 {
   color: #475569;
 }
 
+.segmented button:hover:not(.selected) {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: #cbd5e1;
+  color: var(--foreground);
+}
+
 .segmented button.selected {
   background: var(--card);
   border-color: var(--border);
