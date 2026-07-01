@@ -503,134 +503,207 @@ export function ClaimExperience() {
   }
 
   return (
-    <main>
-      <section className="hero">
-        <Image
-          src="/visuals/world-id-claim-hero.png"
-          alt=""
-          fill
-          className="heroImage"
-          priority
-          sizes="100vw"
-        />
-        <div className="heroShade" />
-        <div className="heroContent">
-          <p className="eyebrow">Track A starter path</p>
-          <h1>Human-Gated Claim</h1>
-          <p className="subhead">
-            A Mini App pattern for eligibility, uniqueness, fairness, and World Chain actions.
-          </p>
+    <main className="claimShell">
+      <aside className="sideRail" aria-label="Claim navigation">
+        <div className="brandMark">
+          <span>W</span>
+          <strong>World Starter</strong>
         </div>
-      </section>
+        <nav>
+          <a className="active" href="#overview">Overview</a>
+          <a href="#verification">Verification</a>
+          <a href="#console">Console</a>
+        </nav>
+        <div className="railNote">
+          <span>Track A</span>
+          <strong>One human. One claim.</strong>
+        </div>
+      </aside>
 
-      <section className="workspace">
-        <div className="statusPanel">
-          <div className="stageRow">
-            {stages.map((stage) => (
-              <span className={stage.active ? "stage active" : "stage"} key={stage.label}>
-                {stage.label}
-              </span>
-            ))}
+      <div className="claimDashboard">
+        <header className="topBar">
+          <div>
+            <p className="eyebrow">Track A starter path</p>
+            <h1>Human-Gated Claim</h1>
           </div>
-          <h2>{message}</h2>
-          <dl>
-            <div>
-              <dt>MiniKit</dt>
-              <dd>{miniKitStatus}</dd>
-            </div>
-            <div>
-              <dt>IDKit</dt>
-              <dd>{liveWorldIdReady ? "Signed context" : "Needs portal config"}</dd>
-            </div>
-            <div>
-              <dt>Wallet</dt>
-              <dd>{signedWalletAddress ? shortAddress(signedWalletAddress) : ""}</dd>
-            </div>
-            <div>
-              <dt>Nullifier</dt>
-              <dd>
-                {liveProof ? (
-                  <span className="evidenceStack">
-                    <span>{shortAddress(liveProof.nullifier)}</span>
-                    <span>{formatVerificationLevel(liveProof.verificationLevel)}</span>
-                  </span>
-                ) : (
-                  ""
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>Chain</dt>
-              <dd>{Number.isFinite(chainId) ? chainId : "Unset"}</dd>
-            </div>
-            <div>
-              <dt>Contract</dt>
-              <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
-            </div>
-            <div>
-              <dt>Tx Hash</dt>
-              <dd>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : ""}</dd>
-            </div>
-          </dl>
-        </div>
+          <div className="topStatus">
+            <span aria-hidden="true" />
+            {miniKitStatus}
+          </div>
+        </header>
 
-        <div className="claimPanel">
+        <section className="hero" id="overview">
           <Image
-            src="/visuals/fair-claim-card.png"
+            src="/visuals/world-id-claim-hero.png"
             alt=""
-            width={420}
-            height={420}
-            className="claimImage"
+            fill
+            className="heroImage"
+            priority
+            sizes="(max-width: 900px) 100vw, 760px"
           />
-          <div className="actions">
-            <button onClick={authenticateWallet}>Wallet auth</button>
-            <button onClick={useLocalWallet}>Use local wallet</button>
-            <button
-              onClick={() => setOpen(true)}
-              disabled={!liveWorldIdReady}
-              className="primary"
-            >
-              Verify with World ID
-            </button>
-            <button onClick={useLocalProof}>Use local proof</button>
-            <button onClick={sendClaim} disabled={!claimNullifier}>
-              {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
-            </button>
-            {worldAppLink && !miniKitDiagnostics.inWorldApp ? (
-              <a className="actionLink" href={worldAppLink}>
-                Open World App
-              </a>
-            ) : null}
+          <div className="heroShade" />
+          <div className="heroContent">
+            <p className="eyebrow">Live claim dashboard</p>
+            <h2>{message}</h2>
+            <p className="subhead">
+              A Mini App pattern for eligibility, uniqueness, fairness, and World Chain actions.
+            </p>
           </div>
-        </div>
-      </section>
-
-      <section className="consolePanel" aria-label="Server console">
-        <div>
-          <p className="eyebrow">Server console</p>
-          <h2>Logs and responses</h2>
-        </div>
-        {claimEvidence.userOpHash || claimEvidence.txHash ? (
-          <div className="evidenceBar">
+          <div className="heroStats" aria-label="Claim snapshot">
             <div>
-              {claimEvidence.txHash ? (
-                <p>
-                  <span>Tx hash</span>
-                  <code>{claimEvidence.txHash}</code>
-                </p>
-              ) : null}
-              {claimEvidence.userOpHash ? (
-                <p>
-                  <span>UserOp</span>
-                  <code>{claimEvidence.userOpHash}</code>
-                </p>
+              <span>Chain</span>
+              <strong>{Number.isFinite(chainId) ? chainId : "Unset"}</strong>
+            </div>
+            <div>
+              <span>Contract</span>
+              <strong>{claimContract ? shortAddress(claimContract) : "Unset"}</strong>
+            </div>
+            <div>
+              <span>Mode</span>
+              <strong>{isWorldApp ? "World App" : "Browser"}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="summaryGrid" aria-label="Claim metrics">
+          <article>
+            <span>Wallet</span>
+            <strong>{signedWalletAddress ? shortAddress(signedWalletAddress) : "Not signed"}</strong>
+            <small>MiniKit authentication state</small>
+          </article>
+          <article>
+            <span>Proof</span>
+            <strong>{claimNullifier ? "Ready" : "Pending"}</strong>
+            <small>{liveProof ? formatVerificationLevel(liveProof.verificationLevel) : "World ID or local proof"}</small>
+          </article>
+          <article>
+            <span>Claim</span>
+            <strong>{claimEvidence.status ?? (claimNullifier ? "Prepared" : "Waiting")}</strong>
+            <small>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : "No tx hash yet"}</small>
+          </article>
+        </section>
+
+        <section className="workspace" id="verification">
+          <div className="statusPanel">
+            <div className="panelHeader">
+              <div>
+                <p className="eyebrow">Verification ledger</p>
+                <h2>Claim status</h2>
+              </div>
+              <div className="stageRow">
+                {stages.map((stage) => (
+                  <span className={stage.active ? "stage active" : "stage"} key={stage.label}>
+                    {stage.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>MiniKit</dt>
+                <dd>{miniKitStatus}</dd>
+              </div>
+              <div>
+                <dt>IDKit</dt>
+                <dd>{liveWorldIdReady ? "Signed context" : "Needs portal config"}</dd>
+              </div>
+              <div>
+                <dt>Wallet</dt>
+                <dd>{signedWalletAddress ? shortAddress(signedWalletAddress) : ""}</dd>
+              </div>
+              <div>
+                <dt>Nullifier</dt>
+                <dd>
+                  {liveProof ? (
+                    <span className="evidenceStack">
+                      <span>{shortAddress(liveProof.nullifier)}</span>
+                      <span>{formatVerificationLevel(liveProof.verificationLevel)}</span>
+                    </span>
+                  ) : (
+                    ""
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Chain</dt>
+                <dd>{Number.isFinite(chainId) ? chainId : "Unset"}</dd>
+              </div>
+              <div>
+                <dt>Contract</dt>
+                <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
+              </div>
+              <div>
+                <dt>Tx Hash</dt>
+                <dd>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : ""}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="claimPanel">
+            <Image
+              src="/visuals/fair-claim-card.png"
+              alt=""
+              width={420}
+              height={420}
+              className="claimImage"
+            />
+            <div className="claimCardCopy">
+              <p className="eyebrow">Action center</p>
+              <h2>Run the claim path</h2>
+            </div>
+            <div className="actions">
+              <button onClick={authenticateWallet}>Wallet auth</button>
+              <button onClick={useLocalWallet}>Use local wallet</button>
+              <button
+                onClick={() => setOpen(true)}
+                disabled={!liveWorldIdReady}
+                className="primary"
+              >
+                Verify with World ID
+              </button>
+              <button onClick={useLocalProof}>Use local proof</button>
+              <button onClick={sendClaim} disabled={!claimNullifier}>
+                {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
+              </button>
+              {worldAppLink && !miniKitDiagnostics.inWorldApp ? (
+                <a className="actionLink" href={worldAppLink}>
+                  Open World App
+                </a>
               ) : null}
             </div>
-            <button onClick={copyClaimHash}>Copy hash</button>
           </div>
-        ) : null}
-        <pre>{log ? JSON.stringify(log, null, 2) : "No button requests yet."}</pre>
-      </section>
+        </section>
+
+        <section className="consolePanel" aria-label="Server console" id="console">
+          <div className="panelHeader">
+            <div>
+              <p className="eyebrow">Server console</p>
+              <h2>Logs and responses</h2>
+            </div>
+            <span className="consoleBadge">JSON</span>
+          </div>
+          {claimEvidence.userOpHash || claimEvidence.txHash ? (
+            <div className="evidenceBar">
+              <div>
+                {claimEvidence.txHash ? (
+                  <p>
+                    <span>Tx hash</span>
+                    <code>{claimEvidence.txHash}</code>
+                  </p>
+                ) : null}
+                {claimEvidence.userOpHash ? (
+                  <p>
+                    <span>UserOp</span>
+                    <code>{claimEvidence.userOpHash}</code>
+                  </p>
+                ) : null}
+              </div>
+              <button onClick={copyClaimHash}>Copy hash</button>
+            </div>
+          ) : null}
+          <pre>{log ? JSON.stringify(log, null, 2) : "No button requests yet."}</pre>
+        </section>
+      </div>
 
       {rpContext ? (
         <IDKitRequestWidget
