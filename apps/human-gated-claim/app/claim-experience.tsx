@@ -504,52 +504,66 @@ export function ClaimExperience() {
 
   return (
     <main className="claimShell">
-      <aside className="sideRail" aria-label="Claim navigation">
-        <div className="brandMark">
-          <span>W</span>
-          <strong>World Starter</strong>
+      <aside className="workflowSidebar" aria-label="Demo navigation">
+        <div className="brandLockup">
+          <span aria-hidden="true">W</span>
+          <div>
+            <strong>World Starter</strong>
+            <small>Command demo</small>
+          </div>
         </div>
-        <nav>
-          <a className="active" href="#overview">Overview</a>
-          <a href="#verification">Verification</a>
-          <a href="#console">Console</a>
+
+        <nav className="workflowNav">
+          <a className="active" href="#command-flow">
+            <span className="navDot live" aria-hidden="true" />
+            Human claim flow
+          </a>
+          <a href="#inspector">
+            <span className="navDot" aria-hidden="true" />
+            Runtime inspector
+          </a>
+          <a href="#console">
+            <span className="navDot" aria-hidden="true" />
+            Server console
+          </a>
         </nav>
-        <div className="railNote">
-          <span>Track A</span>
-          <strong>One human. One claim.</strong>
+
+        <div className="demoPreview">
+          <p className="eyebrow">Demo target</p>
+          <strong>Verified MiniKit command path.</strong>
         </div>
       </aside>
 
-      <div className="claimDashboard">
-        <header className="topBar">
+      <div className="studioShell">
+        <header className="studioTopbar">
           <div>
-            <p className="eyebrow">Track A starter path</p>
+            <p className="breadcrumb">Starter kit / Track A / MiniKit workflow</p>
             <h1>Human-Gated Claim</h1>
           </div>
-          <div className="topStatus">
+          <div className="runtimeBadge">
             <span aria-hidden="true" />
             {miniKitStatus}
           </div>
         </header>
 
-        <section className="hero" id="overview">
-          <Image
-            src="/visuals/world-id-claim-hero.png"
-            alt=""
-            fill
-            className="heroImage"
-            priority
-            sizes="(max-width: 900px) 100vw, 760px"
-          />
-          <div className="heroShade" />
-          <div className="heroContent">
-            <p className="eyebrow">Live claim dashboard</p>
+        <section className="commandHero" id="overview">
+          <div className="commandHeroCopy">
+            <p className="eyebrow">Command workbench</p>
             <h2>{message}</h2>
             <p className="subhead">
-              A Mini App pattern for eligibility, uniqueness, fairness, and World Chain actions.
+              Run each World command in sequence, inspect the request payloads, and see how a
+              browser diagnostic path maps to the World App production flow.
             </p>
           </div>
-          <div className="heroStats" aria-label="Claim snapshot">
+          <div className="runSummary" aria-label="Run summary">
+            <Image
+              src="/visuals/fair-claim-card.png"
+              alt=""
+              width={420}
+              height={320}
+              className="commandVisual"
+              priority
+            />
             <div>
               <span>Chain</span>
               <strong>{Number.isFinite(chainId) ? chainId : "Unset"}</strong>
@@ -559,36 +573,22 @@ export function ClaimExperience() {
               <strong>{claimContract ? shortAddress(claimContract) : "Unset"}</strong>
             </div>
             <div>
-              <span>Mode</span>
+              <span>Runtime</span>
               <strong>{isWorldApp ? "World App" : "Browser"}</strong>
             </div>
           </div>
         </section>
 
-        <section className="summaryGrid" aria-label="Claim metrics">
-          <article>
-            <span>Wallet</span>
-            <strong>{signedWalletAddress ? shortAddress(signedWalletAddress) : "Not signed"}</strong>
-            <small>MiniKit authentication state</small>
-          </article>
-          <article>
-            <span>Proof</span>
-            <strong>{claimNullifier ? "Ready" : "Pending"}</strong>
-            <small>{liveProof ? formatVerificationLevel(liveProof.verificationLevel) : "World ID or local proof"}</small>
-          </article>
-          <article>
-            <span>Claim</span>
-            <strong>{claimEvidence.status ?? (claimNullifier ? "Prepared" : "Waiting")}</strong>
-            <small>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : "No tx hash yet"}</small>
-          </article>
-        </section>
-
-        <section className="workspace" id="verification">
-          <div className="statusPanel">
-            <div className="panelHeader">
+        <section className="studioGrid">
+          <section
+            className="flowPanel"
+            id="command-flow"
+            aria-label="Command flow builder"
+          >
+            <div className="flowToolbar">
               <div>
-                <p className="eyebrow">Verification ledger</p>
-                <h2>Claim status</h2>
+                <p className="eyebrow">Workflow canvas</p>
+                <h2>Run the command chain</h2>
               </div>
               <div className="stageRow">
                 {stages.map((stage) => (
@@ -598,110 +598,207 @@ export function ClaimExperience() {
                 ))}
               </div>
             </div>
-            <dl>
-              <div>
-                <dt>MiniKit</dt>
-                <dd>{miniKitStatus}</dd>
-              </div>
-              <div>
-                <dt>IDKit</dt>
-                <dd>{liveWorldIdReady ? "Signed context" : "Needs portal config"}</dd>
-              </div>
-              <div>
-                <dt>Wallet</dt>
-                <dd>{signedWalletAddress ? shortAddress(signedWalletAddress) : ""}</dd>
-              </div>
-              <div>
-                <dt>Nullifier</dt>
-                <dd>
-                  {liveProof ? (
-                    <span className="evidenceStack">
-                      <span>{shortAddress(liveProof.nullifier)}</span>
-                      <span>{formatVerificationLevel(liveProof.verificationLevel)}</span>
+
+            <div className="commandCanvas">
+              <article className={step !== "idle" ? "commandNode complete" : "commandNode"}>
+                <span className="nodeIndex">01</span>
+                <div className="nodeBody">
+                  <div className="nodeHeader">
+                    <div>
+                      <p className="eyebrow">MiniKit command</p>
+                      <h3>Authenticate wallet</h3>
+                    </div>
+                    <span className="nodeState">
+                      {signedWalletAddress
+                        ? "Signed"
+                        : diagnosticWalletAddress
+                          ? "Local"
+                          : "Idle"}
                     </span>
-                  ) : (
-                    ""
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Chain</dt>
-                <dd>{Number.isFinite(chainId) ? chainId : "Unset"}</dd>
-              </div>
-              <div>
-                <dt>Contract</dt>
-                <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
-              </div>
-              <div>
-                <dt>Tx Hash</dt>
-                <dd>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : ""}</dd>
-              </div>
-            </dl>
-          </div>
+                  </div>
+                  <p>
+                    Proves the user controls a wallet inside World App. Use local wallet to
+                    exercise the downstream command path in a browser.
+                  </p>
+                  <div className="nodeMeta">
+                    <code>MiniKit.walletAuth</code>
+                    <span>{signedWalletAddress ? shortAddress(signedWalletAddress) : "No live signature"}</span>
+                  </div>
+                  <div className="nodeActions">
+                    <button onClick={authenticateWallet}>Wallet auth</button>
+                    <button onClick={useLocalWallet}>Use local wallet</button>
+                  </div>
+                </div>
+              </article>
 
-          <div className="claimPanel">
-            <Image
-              src="/visuals/fair-claim-card.png"
-              alt=""
-              width={420}
-              height={420}
-              className="claimImage"
-            />
-            <div className="claimCardCopy">
-              <p className="eyebrow">Action center</p>
-              <h2>Run the claim path</h2>
-            </div>
-            <div className="actions">
-              <button onClick={authenticateWallet}>Wallet auth</button>
-              <button onClick={useLocalWallet}>Use local wallet</button>
-              <button
-                onClick={() => setOpen(true)}
-                disabled={!liveWorldIdReady}
-                className="primary"
+              <span className={step !== "idle" ? "flowConnector active" : "flowConnector"} />
+
+              <article
+                className={
+                  ["verified", "prepared", "submitted"].includes(step)
+                    ? "commandNode complete"
+                    : "commandNode"
+                }
               >
-                Verify with World ID
-              </button>
-              <button onClick={useLocalProof}>Use local proof</button>
-              <button onClick={sendClaim} disabled={!claimNullifier}>
-                {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
-              </button>
-              {worldAppLink && !miniKitDiagnostics.inWorldApp ? (
-                <a className="actionLink" href={worldAppLink}>
-                  Open World App
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </section>
+                <span className="nodeIndex">02</span>
+                <div className="nodeBody">
+                  <div className="nodeHeader">
+                    <div>
+                      <p className="eyebrow">World ID command</p>
+                      <h3>Verify unique human</h3>
+                    </div>
+                    <span className="nodeState">{claimNullifier ? "Ready" : "Pending"}</span>
+                  </div>
+                  <p>
+                    Verifies the action and produces a nullifier that gates the claim to one
+                    verified human.
+                  </p>
+                  <div className="nodeMeta">
+                    <code>{action}</code>
+                    <span>{claimNullifier ? shortAddress(claimNullifier) : "No nullifier"}</span>
+                  </div>
+                  <div className="nodeActions">
+                    <button
+                      onClick={() => setOpen(true)}
+                      disabled={!liveWorldIdReady}
+                      className="primary"
+                    >
+                      Verify with World ID
+                    </button>
+                    <button onClick={useLocalProof}>Use local proof</button>
+                  </div>
+                </div>
+              </article>
 
-        <section className="consolePanel" aria-label="Server console" id="console">
-          <div className="panelHeader">
-            <div>
-              <p className="eyebrow">Server console</p>
-              <h2>Logs and responses</h2>
+              <span
+                className={
+                  ["verified", "prepared", "submitted"].includes(step)
+                    ? "flowConnector active"
+                    : "flowConnector"
+                }
+              />
+
+              <article
+                className={
+                  ["prepared", "submitted"].includes(step)
+                    ? "commandNode complete"
+                    : "commandNode"
+                }
+              >
+                <span className="nodeIndex">03</span>
+                <div className="nodeBody">
+                  <div className="nodeHeader">
+                    <div>
+                      <p className="eyebrow">World Chain command</p>
+                      <h3>Prepare claim transaction</h3>
+                    </div>
+                    <span className="nodeState">
+                      {claimEvidence.status ?? (claimNullifier ? "Runnable" : "Locked")}
+                    </span>
+                  </div>
+                  <p>
+                    Builds the MiniKit transaction payload and sends it in World App when the
+                    command runtime is available.
+                  </p>
+                  <div className="nodeMeta">
+                    <code>MiniKit.sendTransaction</code>
+                    <span>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : "No tx hash"}</span>
+                  </div>
+                  <div className="nodeActions">
+                    <button onClick={sendClaim} disabled={!claimNullifier}>
+                      {isWorldApp ? "Send claim tx" : "Prepare claim tx"}
+                    </button>
+                    {worldAppLink && !miniKitDiagnostics.inWorldApp ? (
+                      <a className="actionLink" href={worldAppLink}>
+                        Open World App
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
             </div>
-            <span className="consoleBadge">JSON</span>
-          </div>
-          {claimEvidence.userOpHash || claimEvidence.txHash ? (
-            <div className="evidenceBar">
-              <div>
-                {claimEvidence.txHash ? (
-                  <p>
-                    <span>Tx hash</span>
-                    <code>{claimEvidence.txHash}</code>
-                  </p>
-                ) : null}
-                {claimEvidence.userOpHash ? (
-                  <p>
-                    <span>UserOp</span>
-                    <code>{claimEvidence.userOpHash}</code>
-                  </p>
-                ) : null}
+          </section>
+
+          <aside className="inspectorPanel" id="inspector">
+            <section className="inspectorCard statusPanel">
+              <div className="panelHeader">
+                <div>
+                  <p className="eyebrow">Runtime inspector</p>
+                  <h2>Command state</h2>
+                </div>
+                <span className="consoleBadge">Live</span>
               </div>
-              <button onClick={copyClaimHash}>Copy hash</button>
-            </div>
-          ) : null}
-          <pre>{log ? JSON.stringify(log, null, 2) : "No button requests yet."}</pre>
+              <dl>
+                <div>
+                  <dt>MiniKit</dt>
+                  <dd>{miniKitStatus}</dd>
+                </div>
+                <div>
+                  <dt>IDKit</dt>
+                  <dd>{liveWorldIdReady ? "Signed context" : "Needs portal config"}</dd>
+                </div>
+                <div>
+                  <dt>Wallet</dt>
+                  <dd>{signedWalletAddress ? shortAddress(signedWalletAddress) : ""}</dd>
+                </div>
+                <div>
+                  <dt>Nullifier</dt>
+                  <dd>
+                    {liveProof ? (
+                      <span className="evidenceStack">
+                        <span>{shortAddress(liveProof.nullifier)}</span>
+                        <span>{formatVerificationLevel(liveProof.verificationLevel)}</span>
+                      </span>
+                    ) : (
+                      ""
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Chain</dt>
+                  <dd>{Number.isFinite(chainId) ? chainId : "Unset"}</dd>
+                </div>
+                <div>
+                  <dt>Contract</dt>
+                  <dd>{claimContract ? shortAddress(claimContract) : "Unset"}</dd>
+                </div>
+                <div>
+                  <dt>Tx Hash</dt>
+                  <dd>{claimEvidence.txHash ? shortAddress(claimEvidence.txHash) : ""}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="inspectorCard consolePanel" aria-label="Server console" id="console">
+              <div className="panelHeader">
+                <div>
+                  <p className="eyebrow">Server console</p>
+                  <h2>Request output</h2>
+                </div>
+                <span className="consoleBadge">JSON</span>
+              </div>
+              {claimEvidence.userOpHash || claimEvidence.txHash ? (
+                <div className="evidenceBar">
+                  <div>
+                    {claimEvidence.txHash ? (
+                      <p>
+                        <span>Tx hash</span>
+                        <code>{claimEvidence.txHash}</code>
+                      </p>
+                    ) : null}
+                    {claimEvidence.userOpHash ? (
+                      <p>
+                        <span>UserOp</span>
+                        <code>{claimEvidence.userOpHash}</code>
+                      </p>
+                    ) : null}
+                  </div>
+                  <button onClick={copyClaimHash}>Copy hash</button>
+                </div>
+              ) : null}
+              <pre>{log ? JSON.stringify(log, null, 2) : "No button requests yet."}</pre>
+            </section>
+          </aside>
         </section>
       </div>
 
