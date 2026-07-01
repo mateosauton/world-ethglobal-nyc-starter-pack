@@ -12,7 +12,7 @@
   --primary-foreground: #ffffff;
   --accent: #2454d6;
   --accent-soft: #eaf0ff;
-  --warning: #b7791f;
+  --warning: #7c4a03;
   --warning-soft: #fff4d6;
   --console: #111827;
   --console-text: #d9fbe7;
@@ -33,6 +33,12 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
