@@ -699,9 +699,34 @@ body {
 }
 
 @media (max-width: 760px) {
+  .studioShell {
+    display: flex;
+    flex-direction: column;
+  }
+
   .studioShell,
   .workflowSidebar {
     padding: 12px;
+  }
+
+  .studioTopbar {
+    order: 1;
+  }
+
+  .studioGrid {
+    display: contents;
+  }
+
+  .flowPanel {
+    order: 2;
+  }
+
+  .commandHero {
+    order: 3;
+  }
+
+  .inspectorPanel {
+    order: 4;
   }
 
   .studioTopbar,
