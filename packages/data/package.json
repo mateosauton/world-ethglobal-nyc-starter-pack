@@ -1,20 +1,23 @@
 {
-  "name": "@world-lisbon/world-patterns",
+  "name": "@world-lisbon/data",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
   },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@worldcoin/idkit": "^4.2.0",
-    "@worldcoin/idkit-core": "^4.2.1"
+    "@neondatabase/serverless": "^1.0.2",
+    "drizzle-orm": "^0.44.7",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }

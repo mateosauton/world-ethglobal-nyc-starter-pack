@@ -1,7 +1,5 @@
-export * from "./agentkit";
-export * from "./env";
-export * from "./nullifiers";
-export * from "./transactions";
-export * from "./wallet-auth";
-export * from "./world-id";
-
+export * from "./idkit";
+export * from "./outcomes";
+export * from "./policies";
+export * from "./selfie";
+export * from "./simulator";
