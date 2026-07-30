@@ -21,10 +21,11 @@ describe("AgentKit demo page", () => {
     expect(html).toContain("Human-backed test agent");
     expect(html).toContain("Non-human-backed test agent");
     expect(html).toContain("Approve and execute simulated action");
-    expect(html).toContain("never executes a real action");
+    expect(html).toContain("Simulator outcomes never execute a real action.");
     expect(guideHtml).toContain("Human-backed status is not human approval");
     expect(guideHtml).toContain("Public addresses alone cannot complete a live signed challenge");
     expect(guideHtml).toContain("HUMAN_BACKED_AGENT_ADDRESS");
+    expect(guideHtml).toContain("does not depend on running Flow 1 first");
   });
 
   it("keeps the human-approved action in simulator mode", () => {
@@ -32,5 +33,16 @@ describe("AgentKit demo page", () => {
 
     expect(html).toContain("Human-approved action is available only in Simulator mode.");
     expect(html).not.toContain("Propose simulated action");
+  });
+
+  it("states the simulator and approval constraints once", () => {
+    const html = renderToStaticMarkup(<AgentConsole mode="simulator" />);
+
+    expect(html.match(/never executes? a real action\./gi)).toHaveLength(1);
+    expect(
+      html.match(
+        /Approve and execute simulated action is available only after a human-backed proposal awaits human approval\./g,
+      ),
+    ).toHaveLength(1);
   });
 });

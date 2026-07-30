@@ -35,7 +35,9 @@ export function GuideContent() {
       <section className="space-y-3">
         <h3 className="text-lg font-semibold">Flow 2: reviewer approval after an action proposal</h3>
         <ol className="list-decimal space-y-2 pl-5">
-          <li>An agent proposes an action after the protected-resource policy completes.</li>
+          <li>
+            An agent proposes an action in a separate flow; it does not depend on running Flow 1 first.
+          </li>
           <li>A separate reviewer evaluates that proposal and explicitly approves or rejects it.</li>
           <li>This demo records only a simulated execution after approval; it never settles payment or pays out.</li>
         </ol>

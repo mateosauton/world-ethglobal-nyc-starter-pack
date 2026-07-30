@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createDemoCallHandler } from "../app/api/demo-call/route";
 import {
@@ -69,5 +69,70 @@ describe("demo call route", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "invalid_demo_request" });
+  });
+
+  it.each([0, -1, 1.5])(
+    "rejects invalid simulator call value %s without producing a trial event",
+    async (call) => {
+      const response = await handler(
+        post({
+          mode: "simulator",
+          flow: "agentkit-access",
+          agentAddress: HUMAN_BACKED_AGENT_ADDRESS,
+          call,
+        }),
+      );
+      const responseText = await response.text();
+
+      expect(response.status).toBe(400);
+      expect(JSON.parse(responseText)).toEqual({ error: "invalid_demo_request" });
+      expect(responseText).not.toContain(`free use ${call} of 3`);
+    },
+  );
+
+  it("keeps sensitive live failure diagnostics out of the public response", async () => {
+    const sensitiveError =
+      "request to https://secret.example/resource failed for wallet 0xabc123 with signature-sensitive-material";
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const liveHandler = createDemoCallHandler({
+      environment: {
+        NODE_ENV: "test",
+        AGENTKIT_RESOURCE_URL: "https://secret.example/resource",
+        AGENTKIT_AGENT_PRIVATE_KEY: `0x${"01".repeat(32)}`,
+        X402_PAYMENT_PRIVATE_KEY: `0x${"02".repeat(32)}`,
+      },
+      liveFetch: async () => {
+        throw new Error(sensitiveError);
+      },
+    });
+
+    try {
+      const response = await liveHandler(post({ mode: "live", flow: "agentkit-access" }));
+      const responseText = await response.text();
+      const responseBody = JSON.parse(responseText);
+
+      expect(response.status).toBe(502);
+      expect(responseBody).toMatchObject({
+        mode: "live",
+        outcome: "settlement-failed",
+        message: "Live AgentKit/x402 request failed.",
+        events: expect.arrayContaining([
+          expect.objectContaining({
+            stage: "payment_fallback",
+            status: "failed",
+            detail: "No settlement confirmation; protected resource denied",
+          }),
+        ]),
+      });
+      expect(responseText).not.toContain("secret.example");
+      expect(responseText).not.toContain("0xabc123");
+      expect(responseText).not.toContain("signature-sensitive-material");
+      expect(consoleError).toHaveBeenCalledWith(
+        "Live AgentKit/x402 request failed",
+        expect.objectContaining({ message: sensitiveError }),
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

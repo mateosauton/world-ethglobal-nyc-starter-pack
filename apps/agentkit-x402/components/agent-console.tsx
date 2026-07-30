@@ -183,7 +183,6 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
       {mode === "simulator" && (
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>Simulator outcomes never execute a real action.</p>
-          <p>The simulator never executes a real action.</p>
           <p>Approve and execute simulated action is available only after a human-backed proposal awaits human approval.</p>
         </div>
       )}
@@ -197,9 +196,6 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
           <Button onClick={() => run()} disabled={loading}>
             {loading ? "Proposing…" : "Propose simulated action"}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Approve and execute simulated action appears only after a human-backed proposal is awaiting human approval.
-          </p>
           {canApprove && (
             <Button onClick={() => run(true)} disabled={loading}>
               {loading ? "Approving…" : "Approve and execute simulated action"}

@@ -58,7 +58,8 @@ export function createDemoCallHandler(input: {
       if (
         !isDemoFlow(body.flow) ||
         !isDemoAgentAddress(body.agentAddress) ||
-        (body.call !== undefined && (typeof body.call !== "number" || !Number.isFinite(body.call))) ||
+        (body.call !== undefined &&
+          (typeof body.call !== "number" || !Number.isSafeInteger(body.call) || body.call <= 0)) ||
         (body.approval !== undefined && typeof body.approval !== "boolean")
       ) {
         return invalidDemoRequest();
@@ -166,11 +167,12 @@ export function createDemoCallHandler(input: {
         },
       );
     } catch (cause) {
+      console.error("Live AgentKit/x402 request failed", cause);
       return Response.json(
         {
           mode: "live",
           outcome: "settlement-failed",
-          message: cause instanceof Error ? cause.message : "Live request failed",
+          message: "Live AgentKit/x402 request failed.",
           events: events
             .concat({
               stage: "payment_fallback",
