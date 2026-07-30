@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 
 import { AgentConsole } from "../components/agent-console";
 import Page from "../app/page";
+import { GuideContent } from "../content/guide";
 
 describe("AgentKit demo page", () => {
   it("renders shadcn Demo, Guide, and Code surfaces with simulator disclosure", () => {
     const html = renderToStaticMarkup(<Page />);
+    const guideHtml = renderToStaticMarkup(<GuideContent />);
 
     expect(html).toContain("AgentKit policy-distinct flows");
     expect(html).toContain("Demo");
@@ -20,6 +22,9 @@ describe("AgentKit demo page", () => {
     expect(html).toContain("Non-human-backed test agent");
     expect(html).toContain("Approve and execute simulated action");
     expect(html).toContain("never executes a real action");
+    expect(guideHtml).toContain("Human-backed status is not human approval");
+    expect(guideHtml).toContain("Public addresses alone cannot complete a live signed challenge");
+    expect(guideHtml).toContain("HUMAN_BACKED_AGENT_ADDRESS");
   });
 
   it("keeps the human-approved action in simulator mode", () => {
