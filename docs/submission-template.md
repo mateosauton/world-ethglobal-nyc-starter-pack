@@ -1,55 +1,37 @@
-# ETHGlobal Submission Template
+# Lisbon submission template
 
 ## Project
 
 - Name:
 - Team:
 - Demo URL:
-- Repo URL:
-- Track: World ID / AgentKit / Existing Project
+- Repository URL:
+- Demo used as a starting point:
 
-## What you built
+## Product and trust event
 
-Describe the product in 3 to 5 sentences.
+Describe the product in three to five sentences, then answer:
 
-## World usage
+> What specific event in your product requires trust, what abuse becomes possible without it, and why is this World credential the minimum sufficient assurance?
 
-- World ID action:
-- MiniKit commands used:
-- AgentKit usage:
-- Human-in-the-Loop usage:
-- World Chain contract addresses:
+## World integration
 
-## What breaks without World ID?
+- Credential or AgentKit policy:
+- Action and signal binding:
+- Server-side verification or protected resource endpoint:
+- Durable replay, nullifier, or quota control:
+- MiniKit commands, if any:
+- Live path demonstrated:
+- Clearly labeled fallback demonstrated:
 
-Explain the product constraint that requires proof of human. Good answers mention eligibility, uniqueness, fairness, reputation, anti-spam, or rate limits.
+## Evidence
 
-## Proof validation
+- Fresh success path:
+- Failure or duplicate path:
+- Relevant source file:
+- What the simulator cannot claim or grant:
 
-- Backend endpoint or smart contract that validates proofs:
-- Nullifier storage location:
-- Duplicate nullifier behavior:
+## Next step
 
-## AgentBook registration
-
-- Agent wallet address:
-- Registration status command output:
-
-```bash
-npx @worldcoin/agentkit-cli status <agent-address>
-```
-
-## Demo checklist
-
-- Working app URL:
-- Fresh user flow:
-- Failure path shown:
-- World App or browser fallback used:
-- Contract explorer link:
-
-## Post-event plan
-
-- What ships in the next 7 days:
-- What ships in the next 30 days:
-- Why the team will keep building:
-
+- What ships in seven days:
+- What ships in thirty days:

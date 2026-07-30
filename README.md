@@ -1,137 +1,80 @@
-# World ETHGlobal NYC Starter Pack
+# World demos for ETHGlobal Lisbon
 
-Starter pack for World-sponsored ETHGlobal NYC hackers building with World ID 4.0, MiniKit 2.0, AgentKit, Human-in-the-Loop, and World Chain.
+Four independent, desktop-first Next.js demos for building useful trust events with World. Each demo uses the shared shadcn/ui system and keeps its working flow, builder guide, and copyable code together.
 
-## What is inside
+## Demos
 
-- `apps/human-gated-claim` — Track A Mini App showing World App wallet auth, IDKit proof verification, duplicate-nullifier protection, MiniKit transaction preparation/execution, and an in-app request console.
-- `apps/human-agent-console` — Track B console showing a real AgentKit SDK challenge/sign/retry flow, AgentBook verification mode, and a Human-in-the-Loop approval path.
-- `apps/human-approval-desk` — Focused Human-in-the-Loop app using the official message context shape, IDKit proof request, verification webhook, local diagnostics, and agent resume gate.
-- `apps/ui-test-bench` — Local UI/UX test bench for comparing the starter apps across desktop and mobile frames.
-- `packages/world-patterns` — Shared TypeScript helpers for env parsing, World ID verification, wallet auth, nullifier tracking, AgentKit decisions, and transaction encoding.
-- `contracts` — Foundry contract, tests, and deployment script for one-human-one-claim on World Chain.
-- `docs` — Docs-ready starter page, Track C upgrade recipes, submission template, workshop script, triage guide, and release checklist.
-
-## Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-- Foundry 1.5+
-- A World Developer Portal app with World ID 4.0 enabled
-- World Chain Sepolia RPC access for deployment
+- `apps/one-human-trial` — IDKit 4 proof of human gates one free trial per person. Live verification and nullifier persistence fail closed; the simulator never grants a benefit.
+- `apps/selfie-onboarding` — low-friction onboarding with a simulator-first Selfie Check beta flow, an explicit live eligibility gate, and privacy-safe feedback export.
+- `apps/agentkit-x402` — a human-backed AgentKit API with a free-use quota and x402 payment fallback.
+- `apps/credential-policy-lab` — runnable World ID 4 credential policies, assurance notes, and strong-versus-weak integration examples.
 
 ## Quickstart
 
 ```bash
 pnpm install
 cp .env.example .env.local
-pnpm test
-pnpm typecheck
-pnpm contracts:test
+pnpm dev:one-human-trial       # http://localhost:3000
+pnpm dev:selfie-onboarding     # http://localhost:3001
+pnpm dev:agentkit-x402         # http://localhost:3002
+pnpm dev:credential-policy-lab # http://localhost:3003
 ```
 
-Run the Mini App:
+Run all four with `pnpm dev:all`.
+
+## Configuration
+
+Live IDKit flows require server-only World credentials and durable storage:
 
 ```bash
-pnpm dev:claim
-```
-
-Run the AgentKit console:
-
-```bash
-pnpm dev:agent
-```
-
-Run the Human-in-the-Loop approval desk:
-
-```bash
-pnpm dev:hitl
-```
-
-Run the UI/UX bench:
-
-```bash
-pnpm dev:bench
-```
-
-Run all local apps:
-
-```bash
-pnpm dev:all
-```
-
-Run the automated UI/UX smoke bench after the apps are listening on ports 3000, 3001, 3002, and 3003:
-
-```bash
-pnpm test:ui
-```
-
-Check external release prerequisites after `.env.local` is populated:
-
-```bash
-pnpm release:external
-```
-
-## Environment
-
-Do not commit real secrets. Put local values in `.env.local` or your deployment provider.
-
-Required for live World ID 4.0:
-
-```bash
-NEXT_PUBLIC_WORLD_APP_ID=app_...
+WORLD_APP_ID=app_...
 WORLD_RP_ID=rp_...
 WORLD_RP_SIGNING_KEY=0x...
-WORLD_SIGNING_KEY=0x...
-WORLD_ID_ACTION=one-human-one-claim
-NEXT_PUBLIC_WORLD_ID_ACTION=one-human-one-claim
+WORLD_ENVIRONMENT=staging
+DATABASE_URL=postgresql://...
 ```
 
-Required for World Chain transaction flow:
+Selfie Check remains in simulator mode unless beta access is confirmed and explicitly enabled:
 
 ```bash
-NEXT_PUBLIC_WORLD_CHAIN_ID=4801
-NEXT_PUBLIC_CLAIM_CONTRACT_ADDRESS=0x...
+SELFIE_CHECK_BETA_ENABLED=false
+WORLD_SELFIE_ACTION=lisbon-selfie-onboarding
+FEEDBACK_ADMIN_TOKEN=replace-me
+```
+
+The AgentKit + x402 live path additionally uses:
+
+```bash
+AGENTKIT_DEMO_MODE=simulator
+AGENTKIT_RESOURCE_URL=http://localhost:3002/api/resource
+AGENTKIT_AGENT_PRIVATE_KEY=0x...
+X402_PAYMENT_PRIVATE_KEY=0x...
+X402_PAY_TO_ADDRESS=0x...
+X402_FACILITATOR_URL=https://...
+X402_NETWORK=eip155:84532
 WORLD_CHAIN_RPC_URL=https://...
-PRIVATE_KEY=0x...
 ```
 
-Required for the AgentKit demo:
+Secrets stay server-side. Simulator outcomes are visibly labeled and cannot persist a proof use, unlock a protected resource, claim liveness, or represent payment settlement.
+
+## Database
+
+Create a Neon database, set `DATABASE_URL`, then apply the checked-in Drizzle migration:
 
 ```bash
-AGENTKIT_RESOURCE_URL=http://localhost:3001/api/protected-resource
-AGENTKIT_NETWORK=eip155:480
-AGENTKIT_MODE=free
-AGENTBOOK_VERIFIER=local-allowlist
-AGENTBOOK_REGISTERED_AGENTS=0x...
+pnpm --filter @world-lisbon/data exec drizzle-kit migrate --config drizzle.config.ts
 ```
 
-The AgentKit console includes a built-in registered demo agent for local testing when `AGENTBOOK_REGISTERED_AGENTS` is unset or left as the placeholder.
+The schema stores proof uses, AgentKit usage and nonces, and feedback without proof payloads, wallet addresses, images, or biometric data.
 
-## World App vs browser mode
-
-The examples are explicit about which paths are live and which paths are local diagnostics:
-
-- Live IDKit requires `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, and a signing key. The claim app reads `WORLD_RP_SIGNING_KEY`; the official Human-in-the-Loop package reads `WORLD_SIGNING_KEY`, and the HITL desk accepts either.
-- MiniKit wallet auth and transaction execution are World App paths. Browser mode can prepare payloads and run local diagnostics, but it does not claim that a MiniKit command executed.
-- For World App command testing, build the claim app and expose `next start` through a tunnel. Do not point Developer Portal at `next dev`; public dev-server HMR can be blocked and leave the page visible but unhydrated.
-- AgentKit uses `createAgentkitClient` and `createAgentkitHooks`. The default AgentBook verifier is a local allowlist for repeatable testing; set `AGENTBOOK_VERIFIER=live` to use the live AgentBook lookup.
-- The HITL desk returns the same AI SDK message parts consumed by `useHumanApproval`: `tool-approveAction` and `data-approval-context`.
-- `apps/human-approval-desk/lib/official-hitl-tool.ts` shows the official `requestHumanAuthorization` executor that agent runtimes can wrap as a tool.
-
-Production proof validation must happen in a backend or smart contract. The local proof path is only for diagnostics and is labeled as such in the UI.
-
-Check a public World App test surface before scanning:
+## Verify
 
 ```bash
-WORLD_APP_SURFACE_URL=https://your-tunnel.example pnpm test:world-app-surface
+node --test scripts/workspace-shape.test.mjs scripts/lisbon-release-check.test.mjs
+node scripts/lisbon-release-check.mjs
+pnpm test
+pnpm typecheck
+pnpm build
 ```
 
-## Useful docs
-
-- https://docs.world.org/mini-apps
-- https://docs.world.org/mini-apps/quick-start/commands
-- https://docs.world.org/world-id/reference/idkit
-- https://docs.world.org/agents/agent-kit/integrate
-- https://docs.world.org/agents/human-in-the-loop/integrate
-- https://docs.world.org/world-chain
+Builder material lives in each demo's **Guide** and **Code** tabs. The concise event submission prompt is also available in [`docs/submission-template.md`](docs/submission-template.md).

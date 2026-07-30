@@ -13,6 +13,9 @@ coverage
 .playwright-mcp
 .vercel
 output
+test-results
+.worktrees/
+.superpowers/
 
 # Foundry
 cache

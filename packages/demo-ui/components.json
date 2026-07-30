@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles.css",
+    "baseColor": "zinc",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@world-lisbon/demo-ui/components",
+    "utils": "@world-lisbon/demo-ui/lib/utils",
+    "ui": "@world-lisbon/demo-ui/components/ui",
+    "lib": "@world-lisbon/demo-ui/lib",
+    "hooks": "@world-lisbon/demo-ui/hooks"
+  },
+  "registries": {}
+}
