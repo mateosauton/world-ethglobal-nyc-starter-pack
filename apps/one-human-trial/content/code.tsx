@@ -1,8 +1,10 @@
 import { CodePanel } from "@world-lisbon/demo-ui";
 
-const verificationTemplate = `// 1. Validate the IDKit result against server constants.
+const verificationTemplate = `// 1. Validate the IDKit result against server configuration.
+const trialAction = requireEnv("WORLD_TRIAL_ACTION")
 assert(payload.protocol_version === "4.0")
-assert(payload.action === TRIAL_ACTION)
+assert(payload.action === trialAction)
+assert(payload.environment === "production")
 assert(payload.user_presence_completed === true)
 assert(proofOfHuman.signal_hash === hashSignal(TRIAL_SIGNAL))
 
@@ -14,7 +16,7 @@ const verified = await verifyHostedProof({
 
 // 3. Use only the verified response's nullifier.
 const granted = await proofUses.consume({
-  action: TRIAL_ACTION,
+  action: trialAction,
   nullifier: toDecimal(verified.results[0].nullifier),
 })
 
@@ -32,7 +34,7 @@ const widgetTemplate = `<IDKitRequestWidget
   action={request.action}
   rp_context={request.rp_context}
   preset={proofOfHuman({ signal: request.signal })}
-  allow_legacy_proofs={false}
+  allow_legacy_proofs
   require_user_presence
   handleVerify={(result) => fetch("/api/idkit/verify", {
     method: "POST",

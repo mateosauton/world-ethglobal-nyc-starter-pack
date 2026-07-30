@@ -7,8 +7,9 @@ import { hashSignal } from "@worldcoin/idkit/hashing";
 import { verifyHostedProof } from "@world-lisbon/world-patterns";
 
 import {
-  TRIAL_ACTION,
   TRIAL_SIGNAL,
+  trialAction,
+  worldEnvironment,
   type TrialEnvironment
 } from "../../../../lib/trial-config";
 
@@ -29,6 +30,7 @@ type VerifyDependencies = {
 type ProofPayload = {
   protocol_version?: unknown;
   action?: unknown;
+  environment?: unknown;
   user_presence_completed?: unknown;
   responses?: unknown;
 };
@@ -46,11 +48,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isServerBoundProof(
   payload: ProofPayload,
-  expectedSignalHash: string
+  expectedSignalHash: string,
+  expectedAction: string,
+  expectedEnvironment: "production" | "staging"
 ): boolean {
   if (
     payload.protocol_version !== "4.0" ||
-    payload.action !== TRIAL_ACTION ||
+    payload.action !== expectedAction ||
+    payload.environment !== expectedEnvironment ||
     payload.user_presence_completed !== true ||
     !Array.isArray(payload.responses)
   ) {
@@ -108,7 +113,15 @@ export function createVerifyHandler({
       });
     }
 
-    if (!environment.WORLD_RP_ID || (!repository && !environment.DATABASE_URL)) {
+    const action = trialAction(environment);
+    const idkitEnvironment = worldEnvironment(environment);
+
+    if (
+      !environment.WORLD_RP_ID ||
+      !action ||
+      !idkitEnvironment ||
+      (!repository && !environment.DATABASE_URL)
+    ) {
       return errorResponse(
         "missing_configuration",
         "Live verification and durable storage are not configured",
@@ -117,7 +130,15 @@ export function createVerifyHandler({
     }
 
     const payload = (await request.json().catch(() => null)) as ProofPayload | null;
-    if (!payload || !isServerBoundProof(payload, hash(TRIAL_SIGNAL))) {
+    if (
+      !payload ||
+      !isServerBoundProof(
+        payload,
+        hash(TRIAL_SIGNAL),
+        action,
+        idkitEnvironment
+      )
+    ) {
       return errorResponse(
         "invalid_request",
         "Proof must match the server action, signal, v4 policy, and user-presence requirement",
@@ -151,7 +172,7 @@ export function createVerifyHandler({
           createDataClient(environment.DATABASE_URL as string)
         );
       const consumed = await durableRepository.consume({
-        action: TRIAL_ACTION,
+        action,
         nullifier: decimalNullifier(nullifier)
       });
 

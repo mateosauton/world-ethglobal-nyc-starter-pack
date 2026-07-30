@@ -3,15 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 import { InMemoryProofUseRepository } from "@world-lisbon/data";
 
 import { createVerifyHandler } from "../app/api/idkit/verify/route";
-import { TRIAL_ACTION, TRIAL_SIGNAL } from "../lib/trial-config";
+import { TRIAL_SIGNAL } from "../lib/trial-config";
 
 const signalHash = "0xsignal";
+const trialAction = "registered-trial-action";
 
 function proof(nullifier = "0x2a") {
   return {
     protocol_version: "4.0",
     nonce: "nonce-1",
-    action: TRIAL_ACTION,
+    action: trialAction,
     responses: [
       {
         identifier: "proof_of_human",
@@ -46,7 +47,11 @@ describe("IDKit verification route", () => {
       return { success: true, results: [{ nullifier: "0x2a" }] };
     });
     const post = createVerifyHandler({
-      environment: { WORLD_RP_ID: "rp_lisbon" },
+      environment: {
+        WORLD_RP_ID: "rp_lisbon",
+        WORLD_TRIAL_ACTION: trialAction,
+        WORLD_ID_ENVIRONMENT: "staging"
+      },
       repository,
       verify,
       hashSignal: () => signalHash
@@ -69,7 +74,11 @@ describe("IDKit verification route", () => {
   it("rejects a duplicate proof without granting twice", async () => {
     const repository = new InMemoryProofUseRepository();
     const post = createVerifyHandler({
-      environment: { WORLD_RP_ID: "rp_lisbon" },
+      environment: {
+        WORLD_RP_ID: "rp_lisbon",
+        WORLD_TRIAL_ACTION: trialAction,
+        WORLD_ID_ENVIRONMENT: "staging"
+      },
       repository,
       verify: async () => ({ success: true, results: [{ nullifier: "0x2a" }] }),
       hashSignal: () => signalHash
@@ -131,7 +140,11 @@ describe("IDKit verification route", () => {
   it("requires an explicit successful hosted verification result", async () => {
     const repository = new InMemoryProofUseRepository();
     const post = createVerifyHandler({
-      environment: { WORLD_RP_ID: "rp_lisbon" },
+      environment: {
+        WORLD_RP_ID: "rp_lisbon",
+        WORLD_TRIAL_ACTION: trialAction,
+        WORLD_ID_ENVIRONMENT: "staging"
+      },
       repository,
       verify: async () => ({ results: [{ nullifier: "0x2a" }] }),
       hashSignal: () => signalHash
@@ -150,7 +163,11 @@ describe("IDKit verification route", () => {
   it("rejects a proof whose action or signal is not server-bound", async () => {
     const verify = vi.fn();
     const post = createVerifyHandler({
-      environment: { WORLD_RP_ID: "rp_lisbon" },
+      environment: {
+        WORLD_RP_ID: "rp_lisbon",
+        WORLD_TRIAL_ACTION: trialAction,
+        WORLD_ID_ENVIRONMENT: "staging"
+      },
       repository: new InMemoryProofUseRepository(),
       verify,
       hashSignal: () => signalHash

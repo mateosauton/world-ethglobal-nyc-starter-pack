@@ -29,6 +29,7 @@ type RequestContext = {
   app_id: `app_${string}`;
   action: string;
   signal: string;
+  environment: "production" | "staging";
   rp_context: RpContext;
 };
 
@@ -234,14 +235,10 @@ export function TrialDemo({ mode }: { mode: Mode }) {
           action={requestContext.action}
           action_description="Unlock one free builder session"
           rp_context={requestContext.rp_context}
-          allow_legacy_proofs={false}
+          allow_legacy_proofs
           require_user_presence
           preset={preset}
-          environment={
-            process.env.NEXT_PUBLIC_WORLD_ENVIRONMENT === "staging"
-              ? "staging"
-              : "production"
-          }
+          environment={requestContext.environment}
           handleVerify={verify}
           onSuccess={() => setWidgetOpen(false)}
           onError={(code) => {

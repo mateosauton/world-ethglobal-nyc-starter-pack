@@ -1,8 +1,9 @@
 import { createRpRequest } from "@world-lisbon/world-patterns";
 
 import {
-  TRIAL_ACTION,
   TRIAL_SIGNAL,
+  trialAction,
+  worldEnvironment,
   type TrialEnvironment
 } from "../../../../lib/trial-config";
 
@@ -19,8 +20,10 @@ export function createRequestHandler({
     const appId = environment.WORLD_APP_ID;
     const rpId = environment.WORLD_RP_ID;
     const signingKey = environment.WORLD_RP_SIGNING_KEY;
+    const action = trialAction(environment);
+    const idkitEnvironment = worldEnvironment(environment);
 
-    if (!appId || !rpId || !signingKey) {
+    if (!appId || !rpId || !signingKey || !action || !idkitEnvironment) {
       return Response.json(
         {
           error: "Live IDKit is not configured",
@@ -32,14 +35,15 @@ export function createRequestHandler({
 
     const rpContext = createContext({
       rpId,
-      action: TRIAL_ACTION,
+      action,
       signingKey
     });
 
     return Response.json({
       app_id: appId,
-      action: TRIAL_ACTION,
+      action,
       signal: TRIAL_SIGNAL,
+      environment: idkitEnvironment,
       rp_context: rpContext
     });
   };

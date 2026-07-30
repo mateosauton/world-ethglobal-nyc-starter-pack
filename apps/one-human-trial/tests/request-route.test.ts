@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createRequestHandler } from "../app/api/idkit/request/route";
-import { TRIAL_ACTION, TRIAL_SIGNAL } from "../lib/trial-config";
+import { TRIAL_SIGNAL } from "../lib/trial-config";
 
 describe("IDKit RP request route", () => {
   it("creates a signed request without exposing the signing key", async () => {
@@ -16,7 +16,9 @@ describe("IDKit RP request route", () => {
       environment: {
         WORLD_APP_ID: "app_lisbon",
         WORLD_RP_ID: "rp_lisbon",
-        WORLD_RP_SIGNING_KEY: "super-secret"
+        WORLD_RP_SIGNING_KEY: "super-secret",
+        WORLD_TRIAL_ACTION: "registered-trial-action",
+        WORLD_ID_ENVIRONMENT: "production"
       },
       createContext
     });
@@ -27,13 +29,14 @@ describe("IDKit RP request route", () => {
     expect(response.status).toBe(200);
     expect(createContext).toHaveBeenCalledWith({
       rpId: "rp_lisbon",
-      action: TRIAL_ACTION,
+      action: "registered-trial-action",
       signingKey: "super-secret"
     });
     expect(body).toEqual({
       app_id: "app_lisbon",
-      action: TRIAL_ACTION,
+      action: "registered-trial-action",
       signal: TRIAL_SIGNAL,
+      environment: "production",
       rp_context: expect.objectContaining({ signature: "signed" })
     });
     expect(JSON.stringify(body)).not.toContain("super-secret");
@@ -47,6 +50,23 @@ describe("IDKit RP request route", () => {
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
       error: "Live IDKit is not configured",
+      code: "missing_configuration"
+    });
+  });
+
+  it("fails closed when the registered action is not configured", async () => {
+    const post = createRequestHandler({
+      environment: {
+        WORLD_APP_ID: "app_lisbon",
+        WORLD_RP_ID: "rp_lisbon",
+        WORLD_RP_SIGNING_KEY: "super-secret"
+      }
+    });
+
+    const response = await post();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
       code: "missing_configuration"
     });
   });
