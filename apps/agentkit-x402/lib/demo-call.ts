@@ -1,5 +1,14 @@
 import { redactProtocolEvent, type ProtocolEvent } from "./agent-client";
 
+export const HUMAN_BACKED_AGENT_ADDRESS = "0xbEBB5B46fFDA7E7494595E826FC4D4a61ce5f6A6" as const;
+export const NON_HUMAN_BACKED_AGENT_ADDRESS = "0xDBf913F12d403540A83f091D46bDC34bf04c4Fe1" as const;
+
+export type DemoFlow = "agentkit-access" | "human-approval";
+export type DemoAgentAddress =
+  | typeof HUMAN_BACKED_AGENT_ADDRESS
+  | typeof NON_HUMAN_BACKED_AGENT_ADDRESS;
+
+/** @deprecated The console will migrate to flow and agentAddress inputs. */
 export type SimulatorFixture =
   | "trial-sequence"
   | "unregistered-agent"
@@ -11,61 +20,137 @@ export type DemoCallResult = {
     | "human-trial"
     | "payment-required"
     | "payment-settled"
-    | "settlement-failed";
+    | "settlement-failed"
+    | "approval-pending"
+    | "approval-granted"
+    | "action-held";
   events: ProtocolEvent[];
   resource?: { signal: string; confidence: number };
+  action?: {
+    status: "awaiting-human-approval" | "simulated-executed" | "held";
+    label: "Publish supplier payout";
+  };
 };
 
-export async function runDemoCall(input: {
+type DemoFlowInput = {
+  mode: "simulator";
+  flow: DemoFlow;
+  agentAddress: DemoAgentAddress;
+  call?: number;
+  approval?: boolean;
+};
+
+type LegacyFixtureInput = {
   mode: "simulator";
   fixture: SimulatorFixture;
   call?: number;
-}): Promise<DemoCallResult> {
+};
+
+export async function runDemoCall(input: DemoFlowInput | LegacyFixtureInput): Promise<DemoCallResult> {
+  const flow = "flow" in input ? input.flow : "agentkit-access";
+  const agentAddress =
+    "agentAddress" in input
+      ? input.agentAddress
+      : input.fixture === "unregistered-agent"
+        ? NON_HUMAN_BACKED_AGENT_ADDRESS
+        : HUMAN_BACKED_AGENT_ADDRESS;
+  const humanBacked = agentAddress === HUMAN_BACKED_AGENT_ADDRESS;
+  const identity: ProtocolEvent = {
+    stage: "agent_identity",
+    status: humanBacked ? "success" : "failed",
+    detail: humanBacked
+      ? "Human-backed AgentKit eligibility confirmed"
+      : "AgentKit human-backing requirement was not met",
+  };
+
+  if ("fixture" in input && input.fixture === "failed-settlement") {
+    return {
+      mode: "simulator",
+      outcome: "settlement-failed",
+      events: ([
+        {
+          stage: "resource_challenge",
+          status: "success",
+          detail: "Received x402 v2 challenge with AgentKit extension",
+        },
+        identity,
+        {
+          stage: "agentkit_retry",
+          status: "failed",
+          detail: "Human trial exhausted",
+        },
+        {
+          stage: "payment_fallback",
+          status: "failed",
+          detail: "Facilitator rejected settlement; resource denied",
+        },
+      ] satisfies ProtocolEvent[]).map(redactProtocolEvent),
+    };
+  }
+
+  if (flow === "human-approval") {
+    const proposed: ProtocolEvent = {
+      stage: "action_proposed",
+      status: "pending",
+      detail: "Proposed simulated supplier payout publication",
+    };
+
+    if (!humanBacked) {
+      return {
+        mode: "simulator",
+        outcome: "action-held",
+        events: [identity, proposed].map(redactProtocolEvent),
+        action: { status: "held", label: "Publish supplier payout" },
+      };
+    }
+
+    const approved = "approval" in input && input.approval === true;
+    const approval: ProtocolEvent = {
+      stage: "human_approval",
+      status: approved ? "success" : "pending",
+      detail: approved
+        ? "Simulated human approval received"
+        : "Awaiting separate simulated human approval",
+    };
+    const events: ProtocolEvent[] = [identity, proposed, approval];
+    if (approved) {
+      events.push({
+        stage: "action_execution",
+        status: "success",
+        detail: "Simulated action execution completed",
+      });
+    }
+
+    return {
+      mode: "simulator",
+      outcome: approved ? "approval-granted" : "approval-pending",
+      events: events.map(redactProtocolEvent),
+      action: {
+        status: approved ? "simulated-executed" : "awaiting-human-approval",
+        label: "Publish supplier payout",
+      },
+    };
+  }
+
   const challenge: ProtocolEvent = {
     stage: "resource_challenge",
     status: "success",
     detail: "Received x402 v2 challenge with AgentKit extension",
   };
 
-  if (input.fixture === "unregistered-agent") {
-    const events: ProtocolEvent[] = [
-      challenge,
-      {
-        stage: "agentkit_retry",
-        status: "failed",
-        detail: "AgentBook registration not found",
-      },
-      {
-        stage: "payment_fallback",
-        status: "pending",
-        detail: "A real client would now authorize x402 payment",
-      },
-    ];
+  if (!humanBacked) {
     return {
       mode: "simulator",
       outcome: "payment-required",
-      events: events.map(redactProtocolEvent),
-    };
-  }
-
-  if (input.fixture === "failed-settlement") {
-    const events: ProtocolEvent[] = [
-      challenge,
-      {
-        stage: "agentkit_retry",
-        status: "failed",
-        detail: "Human trial exhausted",
-      },
-      {
-        stage: "payment_fallback",
-        status: "failed",
-        detail: "Facilitator rejected settlement; resource denied",
-      },
-    ];
-    return {
-      mode: "simulator",
-      outcome: "settlement-failed",
-      events: events.map(redactProtocolEvent),
+      events: ([
+        challenge,
+        identity,
+        {
+          stage: "payment_fallback",
+          status: "pending",
+          detail: "A real client would now authorize x402 payment",
+        },
+      ] satisfies ProtocolEvent[]).map(redactProtocolEvent),
     };
   }
 
@@ -73,6 +158,7 @@ export async function runDemoCall(input: {
   const trial = call <= 3;
   const events: ProtocolEvent[] = [
     challenge,
+    identity,
     {
       stage: "agentkit_retry",
       status: trial ? "success" : "failed",

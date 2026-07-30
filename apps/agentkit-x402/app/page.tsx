@@ -9,8 +9,8 @@ export default function Page() {
 
   return (
     <DemoShell
-      title="AgentKit human-backed API access"
-      description="Try human-backed access first, then pay only when the shared three-use human trial is exhausted."
+      title="AgentKit policy-distinct flows"
+      description="Compare AgentKit protected-resource access with a separately human-approved simulated action."
       mode={live ? "live" : "simulator"}
       demo={<AgentConsole mode={live ? "live" : "simulator"} />}
       guide={<GuideContent />}

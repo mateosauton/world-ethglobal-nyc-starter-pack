@@ -10,7 +10,15 @@ import { wrapFetchWithPayment } from "@x402/fetch";
 import type { LocalAccount } from "viem";
 
 export type ProtocolEvent = {
-  stage: "resource_challenge" | "agentkit_retry" | "payment_fallback" | "resource";
+  stage:
+    | "resource_challenge"
+    | "agentkit_retry"
+    | "payment_fallback"
+    | "resource"
+    | "agent_identity"
+    | "action_proposed"
+    | "human_approval"
+    | "action_execution";
   status: "pending" | "success" | "failed";
   detail: string;
   secret?: string;

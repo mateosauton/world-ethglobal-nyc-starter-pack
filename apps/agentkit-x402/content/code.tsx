@@ -21,11 +21,27 @@ const hooks = createAgentkitHooks({
 const httpServer = new x402HTTPResourceServer(server, routes)
 httpServer.onProtectedRequest(hooks.requestHook)`;
 
+const approvalPolicyCode = `// Simulator-only policy illustration. This does not sign, settle, or pay out.
+async function simulateApprovedAction({ agentIsHumanBacked, reviewerApproved }) {
+  if (!agentIsHumanBacked) return hold()
+  if (!reviewerApproved) return awaitApproval()
+
+  return recordSimulatedExecution()
+}`;
+
 export function CodeContent() {
   return (
     <div className="space-y-5 py-6">
       <CodePanel title="Human-first client" code={clientCode} />
       <CodePanel title="Protected Hono resource" code={serverCode} />
+      <section className="space-y-2 rounded-lg border p-4">
+        <h2 className="text-lg font-semibold">Approval policy (simulator only)</h2>
+        <p className="text-sm text-muted-foreground">
+          This browser-facing example documents a separate reviewer decision. It cannot sign for a
+          wallet, settle an x402 payment, or trigger a real payout.
+        </p>
+        <CodePanel title="Simulated reviewer gate" code={approvalPolicyCode} />
+      </section>
     </div>
   );
 }

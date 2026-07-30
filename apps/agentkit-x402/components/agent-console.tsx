@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -22,39 +22,76 @@ import {
   Separator,
 } from "@world-lisbon/demo-ui";
 
-import type { DemoCallResult, SimulatorFixture } from "../lib/demo-call";
+import {
+  HUMAN_BACKED_AGENT_ADDRESS,
+  NON_HUMAN_BACKED_AGENT_ADDRESS,
+  type DemoAgentAddress,
+  type DemoCallResult,
+  type DemoFlow,
+} from "../lib/demo-call";
 
-const fixtureLabels: Record<SimulatorFixture, string> = {
-  "trial-sequence": "Three free uses, then payment",
-  "unregistered-agent": "Unregistered agent",
-  "failed-settlement": "Failed settlement",
+const flowLabels: Record<DemoFlow, string> = {
+  "agentkit-access": "AgentKit protected resource",
+  "human-approval": "Human-approved action",
+};
+
+const agentLabels: Record<DemoAgentAddress, string> = {
+  [HUMAN_BACKED_AGENT_ADDRESS]: "Human-backed test agent",
+  [NON_HUMAN_BACKED_AGENT_ADDRESS]: "Non-human-backed test agent",
 };
 
 export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
-  const [fixture, setFixture] = useState<SimulatorFixture>("trial-sequence");
+  const [flow, setFlow] = useState<DemoFlow>("agentkit-access");
+  const [agentAddress, setAgentAddress] = useState<DemoAgentAddress>(HUMAN_BACKED_AGENT_ADDRESS);
   const [call, setCall] = useState(0);
   const [result, setResult] = useState<DemoCallResult>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const requestGeneration = useRef(0);
+  const availableFlows = mode === "simulator"
+    ? Object.entries(flowLabels)
+    : [["agentkit-access", flowLabels["agentkit-access"]]];
 
-  async function run() {
+  function resetResult() {
+    requestGeneration.current += 1;
+    setCall(0);
+    setResult(undefined);
+    setError(undefined);
+    setLoading(false);
+  }
+
+  async function run(approval = false) {
+    if (mode === "live" && flow === "human-approval") {
+      setError("Human-approved action is available only in Simulator mode.");
+      return;
+    }
+
+    const generation = requestGeneration.current + 1;
+    requestGeneration.current = generation;
     setLoading(true);
     setError(undefined);
     const nextCall = call + 1;
+    const body =
+      mode === "simulator"
+        ? { mode, flow, agentAddress, call: nextCall, approval }
+        : { mode, flow, call: nextCall, approval };
+
     try {
       const response = await fetch("/api/demo-call", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode, fixture, call: nextCall }),
+        body: JSON.stringify(body),
       });
-      const body = (await response.json()) as DemoCallResult & { message?: string };
-      if (!response.ok) throw new Error(body.message ?? "Request failed");
-      setResult(body);
+      const responseBody = (await response.json()) as DemoCallResult & { message?: string };
+      if (!response.ok) throw new Error(responseBody.message ?? "Request failed");
+      if (generation !== requestGeneration.current) return;
+      setResult(responseBody);
       setCall(nextCall);
     } catch (cause) {
+      if (generation !== requestGeneration.current) return;
       setError(cause instanceof Error ? cause.message : "Request failed");
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) setLoading(false);
     }
   }
 
@@ -69,63 +106,114 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
           ? ("pending" as const)
           : ("success" as const),
   }));
+  const canApprove =
+    mode === "simulator" &&
+    flow === "human-approval" &&
+    agentAddress === HUMAN_BACKED_AGENT_ADDRESS &&
+    result?.action?.status === "awaiting-human-approval";
 
   return (
     <div className="space-y-6 py-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Badge variant="outline">GET /forecast</Badge>
-            <Badge variant="secondary">$0.01 fallback</Badge>
+            <Badge variant="outline">{flow === "agentkit-access" ? "GET /forecast" : "Simulated action"}</Badge>
+            <Badge variant="secondary">{flow === "agentkit-access" ? "$0.01 fallback" : "Human decision required"}</Badge>
           </div>
-          <h2 className="text-xl font-semibold">Human-first request console</h2>
+          <h2 className="text-xl font-semibold">Two-flow policy console</h2>
           <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-            One anonymous human shares three free calls across every agent they register.
+            Compare AgentKit eligibility for a protected resource with a separately human-approved simulated action.
           </p>
         </div>
         <div className="font-mono text-xs text-muted-foreground">call {call}/4</div>
       </div>
 
-      {mode === "simulator" && (
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="fixture">Simulator fixture</Label>
+          <Label htmlFor="flow">Policy flow</Label>
+          <p className="text-xs text-muted-foreground">
+            {mode === "simulator"
+              ? "Choose AgentKit protected resource or Human-approved action."
+              : "Human-approved action is available only in Simulator mode."}
+          </p>
           <Select
-            value={fixture}
+            value={flow}
             onValueChange={(value) => {
-              setFixture(value as SimulatorFixture);
-              setCall(0);
-              setResult(undefined);
+              setFlow(value as DemoFlow);
+              resetResult();
             }}
           >
-            <SelectTrigger id="fixture" className="max-w-sm">
+            <SelectTrigger id="flow">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(fixtureLabels).map(([value, label]) => (
+              {availableFlows.map(([value, label]) => (
                 <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            Fixtures never sign, pay, persist quota, or unlock the live resource.
-          </p>
+        </div>
+
+        {mode === "simulator" && (
+          <div className="grid gap-2">
+            <Label htmlFor="agent-address">Simulator agent</Label>
+            <p className="text-xs text-muted-foreground">
+              Choose Human-backed test agent or Non-human-backed test agent.
+            </p>
+            <Select
+              value={agentAddress}
+              onValueChange={(value) => {
+                setAgentAddress(value as DemoAgentAddress);
+                resetResult();
+              }}
+            >
+              <SelectTrigger id="agent-address">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(agentLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      {mode === "simulator" && (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>Simulator outcomes never execute a real action.</p>
+          <p>Approve and execute simulated action is available only after a human-backed proposal awaits human approval.</p>
         </div>
       )}
 
-      <Button onClick={run} disabled={loading}>
-        {loading ? "Requesting…" : "Run human-first request"}
-      </Button>
+      {flow === "agentkit-access" ? (
+        <Button onClick={() => run()} disabled={loading}>
+          {loading ? "Requesting…" : "Run AgentKit access"}
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <Button onClick={() => run()} disabled={loading}>
+            {loading ? "Proposing…" : "Propose simulated action"}
+          </Button>
+          {canApprove && (
+            <Button onClick={() => run(true)} disabled={loading}>
+              {loading ? "Approving…" : "Approve and execute simulated action"}
+            </Button>
+          )}
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>Resource denied</AlertTitle>
+          <AlertTitle>Request denied</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <Separator />
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Protocol events</CardTitle>
@@ -135,7 +223,7 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
             {events ? (
               <EventTimeline events={events} />
             ) : (
-              <p className="text-sm text-muted-foreground">Run a request to inspect the retry order.</p>
+              <p className="text-sm text-muted-foreground">Run a request to inspect the policy path.</p>
             )}
           </CardContent>
         </Card>
@@ -143,7 +231,7 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Protected response</CardTitle>
-            <CardDescription>Returned only after trial access or successful settlement.</CardDescription>
+            <CardDescription>Released only after the resource policy succeeds.</CardDescription>
           </CardHeader>
           <CardContent>
             {result?.resource ? (
@@ -152,6 +240,23 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
               </pre>
             ) : (
               <p className="text-sm text-muted-foreground">No protected payload released.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Simulated action</CardTitle>
+            <CardDescription>Distinct from protected-resource access.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {result?.action ? (
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Action</dt><dd>{result.action.label}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Status</dt><dd>{result.action.status}</dd></div>
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">No action proposed.</p>
             )}
           </CardContent>
         </Card>
