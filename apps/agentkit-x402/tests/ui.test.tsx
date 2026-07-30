@@ -8,11 +8,16 @@ describe("AgentKit demo page", () => {
   it("renders shadcn Demo, Guide, and Code surfaces with simulator disclosure", () => {
     const html = renderToStaticMarkup(<Page />);
 
-    expect(html).toContain("AgentKit human-backed API access");
+    expect(html).toContain("AgentKit policy-distinct flows");
     expect(html).toContain("Demo");
     expect(html).toContain("Guide");
     expect(html).toContain("Code");
     expect(html).toContain("Simulator");
-    expect(html).toContain("Run human-first request");
+    expect(html).toContain("AgentKit protected resource");
+    expect(html).toContain("Human-approved action");
+    expect(html).toContain("Human-backed test agent");
+    expect(html).toContain("Non-human-backed test agent");
+    expect(html).toContain("Approve and execute simulated action");
+    expect(html).toContain("never executes a real action");
   });
 });
