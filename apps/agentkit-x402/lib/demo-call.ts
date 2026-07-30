@@ -20,6 +20,7 @@ export type DemoCallResult = {
     | "human-trial"
     | "payment-required"
     | "payment-settled"
+    | "settlement-failed"
     | "approval-pending"
     | "approval-granted"
     | "action-held";
@@ -61,6 +62,31 @@ export async function runDemoCall(input: DemoFlowInput | LegacyFixtureInput): Pr
       ? "Human-backed AgentKit eligibility confirmed"
       : "AgentKit human-backing requirement was not met",
   };
+
+  if ("fixture" in input && input.fixture === "failed-settlement") {
+    return {
+      mode: "simulator",
+      outcome: "settlement-failed",
+      events: ([
+        {
+          stage: "resource_challenge",
+          status: "success",
+          detail: "Received x402 v2 challenge with AgentKit extension",
+        },
+        identity,
+        {
+          stage: "agentkit_retry",
+          status: "failed",
+          detail: "Human trial exhausted",
+        },
+        {
+          stage: "payment_fallback",
+          status: "failed",
+          detail: "Facilitator rejected settlement; resource denied",
+        },
+      ] satisfies ProtocolEvent[]).map(redactProtocolEvent),
+    };
+  }
 
   if (flow === "human-approval") {
     const proposed: ProtocolEvent = {

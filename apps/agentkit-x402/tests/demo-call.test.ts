@@ -47,6 +47,20 @@ describe("demo call orchestration", () => {
     });
   });
 
+  it("keeps the legacy failed-settlement fixture denied", async () => {
+    const result = await runDemoCall({
+      mode: "simulator",
+      fixture: "failed-settlement",
+    });
+
+    expect(result.outcome).toBe("settlement-failed");
+    expect(result.resource).toBeUndefined();
+    expect(result.events.at(-1)).toMatchObject({
+      stage: "payment_fallback",
+      status: "failed",
+    });
+  });
+
   it("requires a distinct human approval before the human-backed agent action executes", async () => {
     const pending = await runDemoCall({
       mode: "simulator",
