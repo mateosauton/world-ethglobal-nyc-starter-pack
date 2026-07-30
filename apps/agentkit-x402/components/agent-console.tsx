@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   AlertDescription,
@@ -47,14 +47,27 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
   const [result, setResult] = useState<DemoCallResult>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const requestGeneration = useRef(0);
+  const availableFlows = mode === "simulator"
+    ? Object.entries(flowLabels)
+    : [["agentkit-access", flowLabels["agentkit-access"]]];
 
   function resetResult() {
+    requestGeneration.current += 1;
     setCall(0);
     setResult(undefined);
     setError(undefined);
+    setLoading(false);
   }
 
   async function run(approval = false) {
+    if (mode === "live" && flow === "human-approval") {
+      setError("Human-approved action is available only in Simulator mode.");
+      return;
+    }
+
+    const generation = requestGeneration.current + 1;
+    requestGeneration.current = generation;
     setLoading(true);
     setError(undefined);
     const nextCall = call + 1;
@@ -71,12 +84,14 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
       });
       const responseBody = (await response.json()) as DemoCallResult & { message?: string };
       if (!response.ok) throw new Error(responseBody.message ?? "Request failed");
+      if (generation !== requestGeneration.current) return;
       setResult(responseBody);
       setCall(nextCall);
     } catch (cause) {
+      if (generation !== requestGeneration.current) return;
       setError(cause instanceof Error ? cause.message : "Request failed");
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) setLoading(false);
     }
   }
 
@@ -117,7 +132,9 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
         <div className="grid gap-2">
           <Label htmlFor="flow">Policy flow</Label>
           <p className="text-xs text-muted-foreground">
-            Choose AgentKit protected resource or Human-approved action.
+            {mode === "simulator"
+              ? "Choose AgentKit protected resource or Human-approved action."
+              : "Human-approved action is available only in Simulator mode."}
           </p>
           <Select
             value={flow}
@@ -130,7 +147,7 @@ export function AgentConsole({ mode }: { mode: "live" | "simulator" }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(flowLabels).map(([value, label]) => (
+              {availableFlows.map(([value, label]) => (
                 <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
